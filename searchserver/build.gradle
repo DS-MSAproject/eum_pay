@@ -1,0 +1,102 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.google.cloud.tools.jib'
+}
+
+group = 'com.eum'
+version = '0.0.1-SNAPSHOT'
+description = 'searchserver'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.1")
+}
+
+dependencies {
+    // 1. 코어 엔진 (엘라스틱서치 & 웹플럭스)
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // 2. 서비스 디스커버리 (유레카 클라이언트)
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+
+    implementation 'com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations'
+
+    // 3. 메시징 (카프카)
+    implementation 'org.springframework.cloud:spring-cloud-stream'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // 4. 도구 (롬복 등)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // 5. 테스트
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // 6. 레디스
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    // 💡 Reactive 환경(WebFlux)을 쓰신다면 'reactive' starter를 사용하세요
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+jib {
+    from {
+        // Dockerfile의 FROM eclipse-temurin:17-jdk와 동일
+        image = 'eclipse-temurin:17-jdk'
+    }
+    to {
+        // dseum/productserver:0.0.1-SNAPSHOT 형태
+        image = "dseum/${project.name}"
+        tags = ["${project.version}", 'latest']
+    }
+    container {
+        // Dockerfile의 ENTRYPOINT 설정 자동화
+        // Jib는 알아서 lib, meta-inf, classes를 분리하여 클래스패스를 구성함
+        mainClass = 'com.eum.searchserver.SearchserverApplication'
+
+        // Dockerfile의 VOLUME /tmp
+        volumes = ['/tmp']
+
+        // Dockerfile의 LABEL maintainer
+        labels = [maintainer: 'dseum-search <lisepa7@gmail.com>']
+
+        // 환경 설정 및 인코딩
+        jvmFlags = ['-Dfile.encoding=UTF-8', '-server']
+
+        // 빌드 시간을 현재로 설정
+        creationTime = 'USE_CURRENT_TIMESTAMP'
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

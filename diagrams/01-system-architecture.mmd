@@ -1,0 +1,83 @@
+flowchart TB
+    Client["🖥️ Client\nFrontend + Toss JS SDK"]
+
+    subgraph GW["API Gateway"]
+        direction TB
+        gatewayserver["gatewayserver :8072"]
+    end
+
+    subgraph PAY["paymentserver :8083"]
+        direction TB
+        PaySvc["PaymentService\n3-Phase TransactionTemplate"]
+        TossClient["TossPaymentsClient\nCircuit Breaker · Timeout"]
+        PayMon["PaymentOutboxMonitor\n@Scheduled 5분마다 PENDING 감시"]
+        PayDB[("PostgreSQL\noutbox_events / payments")]
+    end
+
+    subgraph TOSS_EXT["외부 PG"]
+        TossAPI["🏦 Toss Payments API\nhttps://api.tosspayments.com"]
+    end
+
+    subgraph INV["inventoryserver :8085"]
+        direction TB
+        InvHandler["InventoryOrderEventHandler\n@Transactional"]
+        InvOutbox[("PostgreSQL\ninventory_outbox / reservations")]
+    end
+
+    subgraph ORD["orderserver"]
+        direction TB
+        OrdConsumer["OrderEventConsumer"]
+        OrdDB[("PostgreSQL\norders")]
+    end
+
+    subgraph CDC["CDC — Debezium"]
+        DebPay["payment-outbox connector"]
+        DebInv["inventory-outbox connector"]
+    end
+
+    subgraph KAFKA["Apache Kafka — KRaft 3 Brokers"]
+        direction LR
+        subgraph PAY_T["Payment Topics"]
+            T_PR["PaymentRequested"]
+            T_PC["PaymentCompleted"]
+            T_PF["PaymentFailed"]
+            T_PCAN["PaymentCancelled"]
+        end
+        subgraph ORD_T["Order Topics"]
+            T_OCO["OrderCheckedOut"]
+            T_OC["OrderCancelled"]
+        end
+        subgraph INV_T["Inventory Topics"]
+            T_IR["InventoryReserved"]
+            T_IRF["InventoryReservationFailed"]
+            T_ID["InventoryDeducted"]
+            T_IDF["InventoryDeductionFailed"]
+            T_IREL["InventoryReleased"]
+            T_IRELF["InventoryReleaseFailed"]
+        end
+        subgraph DLQ_T["DLQ (error.원본토픽.그룹 — 자동 생성)"]
+            DLQ["14개 소비자 전체 DLQ 보호"]
+        end
+    end
+
+    Client --> gatewayserver --> PaySvc
+    PaySvc <--> TossClient
+    TossClient <-->|"HTTPS + CB"| TossAPI
+    PaySvc --> PayDB
+    PayMon -.->|"감시 WARN 로그"| PayDB
+
+    PayDB --> DebPay
+    DebPay --> T_PC & T_PF & T_PCAN
+
+    T_PR -->|"DLQ 보호"| PaySvc
+    T_OC -->|"DLQ 보호"| PaySvc
+
+    T_OCO -->|"DLQ 보호"| InvHandler
+    T_PC & T_PF & T_PCAN -->|"DLQ 보호"| InvHandler
+
+    InvHandler --> InvOutbox
+    InvOutbox --> DebInv
+    DebInv --> T_PR & T_IR & T_IRF & T_ID & T_IDF & T_IREL & T_IRELF
+
+    T_IR & T_IRF & T_PC & T_PF & T_ID & T_IDF & T_IREL & T_IRELF -->|"DLQ 보호"| OrdConsumer
+    OrdConsumer --> OrdDB

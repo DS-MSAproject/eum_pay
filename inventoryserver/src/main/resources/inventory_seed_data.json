@@ -1,0 +1,369 @@
+[
+  {
+    "productId": 1,
+    "productName": "어글어글 동물복지 연어마들렌",
+    "stockQuantity": 25
+  },
+  {
+    "productId": 2,
+    "optionId": 1,
+    "productName": "어글어글 베이커리 뼈간식 7종",
+    "optionName": "연어 마들렌",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 2,
+    "optionId": 2,
+    "productName": "어글어글 베이커리 뼈간식 7종",
+    "optionName": "비지 에그 타르트",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 2,
+    "optionId": 3,
+    "productName": "어글어글 베이커리 뼈간식 7종",
+    "optionName": "제주 치킨 스윗 치즈번",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 2,
+    "optionId": 4,
+    "productName": "어글어글 베이커리 뼈간식 7종",
+    "optionName": "제주 통닭발 6개입",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 2,
+    "optionId": 5,
+    "productName": "어글어글 베이커리 뼈간식 7종",
+    "optionName": "전라도 나주 유황오리 도가니뼈 80g",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 2,
+    "optionId": 6,
+    "productName": "어글어글 베이커리 뼈간식 7종",
+    "optionName": "메추리 통구이",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 2,
+    "optionId": 7,
+    "productName": "어글어글 베이커리 뼈간식 7종",
+    "optionName": "강원도 대관령 무염 황태채 40g",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 3,
+    "productName": "어글어글 아이스크림 케이크",
+    "stockQuantity": 12
+  },
+  {
+    "productId": 4,
+    "productName": "어글어글 제주치킨 스윗치즈번",
+    "stockQuantity": 30
+  },
+  {
+    "productId": 5,
+    "productName": "스위피 소이밀크 펫두유 1BOX",
+    "stockQuantity": 18
+  },
+  {
+    "productId": 6,
+    "productName": "어글어글 제주야채 믹스샐러드",
+    "stockQuantity": 24
+  },
+  {
+    "productId": 7,
+    "productName": "뉴 비프테린",
+    "stockQuantity": 35
+  },
+  {
+    "productId": 8,
+    "productName": "대구테린",
+    "stockQuantity": 35
+  },
+  {
+    "productId": 9,
+    "productName": "덕테린",
+    "stockQuantity": 35
+  },
+  {
+    "productId": 10,
+    "productName": "연어테린",
+    "stockQuantity": 35
+  },
+  {
+    "productId": 11,
+    "productName": "치킨테린",
+    "stockQuantity": 35
+  },
+  {
+    "productId": 12,
+    "productName": "테린 체험 세트",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 13,
+    "productName": "어글어글 스팀 100g 8종",
+    "stockQuantity": 28
+  },
+  {
+    "productId": 14,
+    "productName": "어글어글 스팀 1kg 대용량",
+    "stockQuantity": 8
+  },
+  {
+    "productId": 15,
+    "productName": "어글어글 스팀 300g 대용량",
+    "stockQuantity": 18
+  },
+  {
+    "productId": 16,
+    "optionId": 1,
+    "productName": "어글어글 우유껌 50g 7종",
+    "optionName": "제주 당근 우유껌 50g",
+    "stockQuantity": 40
+  },
+  {
+    "productId": 16,
+    "optionId": 2,
+    "productName": "어글어글 우유껌 50g 7종",
+    "optionName": "제주 단호박 우유껌 50g",
+    "stockQuantity": 40
+  },
+  {
+    "productId": 16,
+    "optionId": 3,
+    "productName": "어글어글 우유껌 50g 7종",
+    "optionName": "제주 브로콜리 우유껌 50g",
+    "stockQuantity": 40
+  },
+  {
+    "productId": 16,
+    "optionId": 4,
+    "productName": "어글어글 우유껌 50g 7종",
+    "optionName": "제주 블루베리 우유껌 50g",
+    "stockQuantity": 40
+  },
+  {
+    "productId": 16,
+    "optionId": 5,
+    "productName": "어글어글 우유껌 50g 7종",
+    "optionName": "전북 순창 딸기 우유껌 50g",
+    "stockQuantity": 40
+  },
+  {
+    "productId": 16,
+    "optionId": 6,
+    "productName": "어글어글 우유껌 50g 7종",
+    "optionName": "해외 애플망고 우유껌 50g",
+    "stockQuantity": 40
+  },
+  {
+    "productId": 16,
+    "optionId": 7,
+    "productName": "어글어글 우유껌 50g 7종",
+    "optionName": "해외 크랜베리 우유껌 50g",
+    "stockQuantity": 40
+  },
+  {
+    "productId": 18,
+    "productName": "어글어글 육포 대용량 5종",
+    "stockQuantity": 22
+  },
+  {
+    "productId": 19,
+    "productName": "어글어글 육포",
+    "stockQuantity": 26
+  },
+  {
+    "productId": 20,
+    "productName": "오독오독 바삭 3종세트",
+    "stockQuantity": 30
+  },
+  {
+    "productId": 21,
+    "productName": "오독오독 바삭 6종세트",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 22,
+    "productName": "오독오독 바삭 고구마",
+    "stockQuantity": 38
+  },
+  {
+    "productId": 23,
+    "productName": "오독오독 바삭 당근",
+    "stockQuantity": 38
+  },
+  {
+    "productId": 24,
+    "productName": "오독오독 바삭 캥거루 120g",
+    "stockQuantity": 34
+  },
+  {
+    "productId": 25,
+    "productName": "오독오독 바삭 덕브로콜리",
+    "stockQuantity": 34
+  },
+  {
+    "productId": 26,
+    "productName": "오독오독 바삭 연어껍질 120g",
+    "stockQuantity": 38
+  },
+  {
+    "productId": 27,
+    "productName": "오독오독 바삭 시금치 120g",
+    "stockQuantity": 38
+  },
+  {
+    "productId": 28,
+    "productName": "오독오독 바삭 치킨블루베리 120g",
+    "stockQuantity": 34
+  },
+  {
+    "productId": 29,
+    "productName": "오독오독 바삭 덕블연 3종세트",
+    "stockQuantity": 24
+  },
+  {
+    "productId": 30,
+    "optionId": 1,
+    "productName": "오독오독 포켓 3종 대용량 (5개입)",
+    "optionName": "포켓 표고버섯",
+    "stockQuantity": 24
+  },
+  {
+    "productId": 30,
+    "optionId": 2,
+    "productName": "오독오독 포켓 3종 대용량 (5개입)",
+    "optionName": "포켓 햄프씨드",
+    "stockQuantity": 24
+  },
+  {
+    "productId": 30,
+    "optionId": 3,
+    "productName": "오독오독 포켓 3종 대용량 (5개입)",
+    "optionName": "포켓 스피루리나",
+    "stockQuantity": 24
+  },
+  {
+    "productId": 31,
+    "productName": "스위피 오독오독 미니 2종 60g",
+    "stockQuantity": 28
+  },
+  {
+    "productId": 32,
+    "optionId": 1,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "고구마",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 32,
+    "optionId": 2,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "당근",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 32,
+    "optionId": 3,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "치킨시금치",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 32,
+    "optionId": 4,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "치킨블루베리",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 32,
+    "optionId": 5,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "연어껍질",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 32,
+    "optionId": 6,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "덕브로콜리",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 32,
+    "optionId": 7,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "캥거루",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 32,
+    "optionId": 8,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "비프앤블랙빈",
+    "stockQuantity": 0
+  },
+  {
+    "productId": 32,
+    "optionId": 9,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "치킨앤비트",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 32,
+    "optionId": 10,
+    "productName": "오독오독 바삭 10종 골라담기",
+    "optionName": "황태",
+    "stockQuantity": 20
+  },
+  {
+    "productId": 33,
+    "productName": "스위피 꽈배기 츄 40g",
+    "stockQuantity": 30
+  },
+  {
+    "productId": 34,
+    "productName": "스위피 덕본 오리뼈 오리날개뼈 150g",
+    "stockQuantity": 25
+  },
+  {
+    "productId": 35,
+    "productName": "어글어글 강원도 대관령 무염 황태채 40g",
+    "stockQuantity": 30
+  },
+  {
+    "productId": 36,
+    "optionId": 1,
+    "productName": "어글어글 뼈 간식 4종",
+    "optionName": "제주 통닭발 6개입",
+    "stockQuantity": 30
+  },
+  {
+    "productId": 36,
+    "optionId": 2,
+    "productName": "어글어글 뼈 간식 4종",
+    "optionName": "전라도 나주 유황오리 도가니뼈 80g",
+    "stockQuantity": 30
+  },
+  {
+    "productId": 36,
+    "optionId": 3,
+    "productName": "어글어글 뼈 간식 4종",
+    "optionName": "메추리 통구이",
+    "stockQuantity": 30
+  },
+  {
+    "productId": 36,
+    "optionId": 4,
+    "productName": "어글어글 뼈 간식 4종",
+    "optionName": "강원도 대관령 무염 황태채 40g",
+    "stockQuantity": 30
+  }
+]

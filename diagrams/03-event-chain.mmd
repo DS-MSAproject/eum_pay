@@ -1,0 +1,51 @@
+flowchart LR
+    subgraph ORD["orderserver"]
+        CO["주문 체크아웃\nOrderCheckedOut 발행"]
+        OS_RES["재고 예약 결과 반영"]
+        OS_PAY["결제 완료 반영"]
+        OS_DED["재고 차감 반영\n→ ORDER_COMPLETED ✅"]
+        OS_FAIL["주문 실패 처리\n→ ORDER_FAILED ❌"]
+    end
+
+    subgraph INV["inventoryserver"]
+        IR["재고 예약 성공\nInventoryReserved 발행"]
+        IRF["재고 예약 실패\nInventoryReservationFailed 발행"]
+        PR["결제 요청 전달\nPaymentRequested 발행"]
+        ID["재고 차감 확정\nInventoryDeducted 발행"]
+        IDF["차감 실패\nInventoryDeductionFailed 발행"]
+        IREL["재고 해제\nInventoryReleased 발행"]
+    end
+
+    subgraph PAY["paymentserver"]
+        PAY_PREP["결제 준비\nPayment READY"]
+        PAY_CONF["결제 승인 ✅\nToss API 호출"]
+        PAY_FAIL["결제 실패 ❌\nPaymentFailed 발행"]
+        PAY_CAN["결제 취소\nPaymentCancelled 발행"]
+    end
+
+    CO -->|OrderCheckedOut| IR
+    CO -->|OrderCheckedOut| IRF
+
+    IR -->|InventoryReserved| OS_RES
+    IRF -->|InventoryReservationFailed| OS_FAIL
+
+    IR -->|PaymentRequested| PAY_PREP
+    PAY_PREP -->|"프론트 confirm 호출"| PAY_CONF
+    PAY_CONF -->|PaymentCompleted| OS_PAY
+    PAY_CONF -->|PaymentCompleted| ID
+    PAY_CONF -.->|PaymentFailed| PAY_FAIL
+    PAY_FAIL -->|PaymentFailed| IREL
+    IREL -->|InventoryReleased| OS_FAIL
+
+    ID -->|InventoryDeducted| OS_DED
+    IDF -->|InventoryDeductionFailed| OS_FAIL
+
+    OS_PAY -->|OrderCancelled| PAY_CAN
+    PAY_CAN -->|PaymentCancelled| IREL
+
+    style CO fill:#4A90D9,color:#fff
+    style PAY_CONF fill:#27AE60,color:#fff
+    style OS_DED fill:#27AE60,color:#fff
+    style OS_FAIL fill:#E74C3C,color:#fff
+    style PAY_FAIL fill:#E74C3C,color:#fff
+    style IRF fill:#E74C3C,color:#fff

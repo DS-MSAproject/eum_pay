@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "id": { "type": "long" },
+    "title": {
+      "type": "text",
+      "analyzer": "nori_analyzer",
+      "fields": {
+        "edge": { "type": "text", "analyzer": "edge_analyzer", "search_analyzer": "standard" },
+        "keyword": { "type": "keyword" }
+      }
+    },
+    "category": { "type": "keyword" },
+    "brand_name": { "type": "text" },
+    "sub_category": { "type": "keyword" },
+    "price": { "type": "long" },
+    "original_price": { "type": "long" },
+    "sales_count": { "type": "long" },
+    "sales_rank": { "type": "integer" },
+    "image_url": { "type": "keyword", "index": false },
+    "created_at": {
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss||strict_date_optional_time||epoch_millis"
+    }
+  }
+}

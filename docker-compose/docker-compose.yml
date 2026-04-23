@@ -1,0 +1,1022 @@
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: postgres
+    mem_limit: 384m
+    ports:
+      - "5432:5432" # 컨테이너 안 포트/호스트 시스템 외부 포트
+    # 핵심: 논리적 복제(Logical Replication) 활성화
+    command: ["postgres", "-c", "wal_level=logical"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      backend:
+        aliases:
+          - "database"
+          - "postgres"
+    environment:
+      POSTGRES_DB: "dseum"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "1234"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dseum"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  inventory-database:
+    image: postgres:16-alpine
+    container_name: inventory-postgres
+    mem_limit: 384m
+    volumes:
+      - inventory-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    command: ["postgres", "-c", "wal_level=logical"]
+    networks:
+      backend:
+        aliases:
+          - "inventory-database"
+          - "inventory-postgres"
+    environment:
+      POSTGRES_DB: "dseum_inventory"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "1234"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dseum_inventory"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  product-database:
+    image: postgres:16-alpine
+    container_name: product-postgres
+    mem_limit: 384m
+    volumes:
+      - product-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    command: ["postgres", "-c", "wal_level=logical"]
+    networks:
+      backend:
+        aliases:
+          - "product-database"
+          - "product-postgres"
+    environment:
+      POSTGRES_DB: "dseum_product"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "1234"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dseum_product"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cart-database:
+    image: postgres:16-alpine
+    container_name: cart-postgres
+    mem_limit: 384m
+    volumes:
+      - cart-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    command: ["postgres", "-c", "wal_level=logical"]
+    networks:
+      backend:
+        aliases:
+          - "cart-database"
+          - "cart-postgres"
+    environment:
+      POSTGRES_DB: "dseum_cart"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "1234"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dseum_cart"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  order-database:
+    image: postgres:16-alpine
+    container_name: order-postgres
+    mem_limit: 384m
+    volumes:
+      - order-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5437:5432"
+    command: ["postgres", "-c", "wal_level=logical"]
+    networks:
+      backend:
+        aliases:
+          - "order-database"
+          - "order-postgres"
+    environment:
+      POSTGRES_DB: "dseum_order"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "1234"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dseum_order"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  review-database:
+    image: postgres:16-alpine
+    container_name: review-postgres
+    mem_limit: 384m
+    volumes:
+      - review-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    command: ["postgres", "-c", "wal_level=logical"]
+    networks:
+      backend:
+        aliases:
+          - "review-database"
+          - "review-postgres"
+    environment:
+      POSTGRES_DB: "dseum_review"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "1234"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dseum_review"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  payment-database:
+    image: postgres:16-alpine
+    container_name: payment-postgres
+    mem_limit: 384m
+    volumes:
+      - payment-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5438:5432"
+    command: ["postgres", "-c", "wal_level=logical"]
+    networks:
+      backend:
+        aliases:
+          - "payment-database"
+          - "payment-postgres"
+    environment:
+      POSTGRES_DB: "dseum_payment"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "1234"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dseum_payment"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  board-database:
+    image: postgres:16-alpine
+    container_name: board-postgres
+    mem_limit: 384m
+    volumes:
+      - board-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5439:5432"
+    command: ["postgres", "-c", "wal_level=logical"]
+    networks:
+      backend:
+        aliases:
+          - "board-database"
+          - "board-postgres"
+    environment:
+      POSTGRES_DB: "dseum_board"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "1234"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dseum_board"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    mem_limit: 1g
+    volumes:
+      - kafka1-data:/var/lib/kafka/data
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093,2@kafka2:9093,3@kafka3:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+    networks:
+      backend:
+        aliases:
+          - "kafka"
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka2
+    mem_limit: 1g
+    volumes:
+      - kafka2-data:/var/lib/kafka/data
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "9094:9092"
+      - "39092:29092"
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093,2@kafka2:9093,3@kafka3:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9092,PLAINTEXT_HOST://localhost:39092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+    networks:
+      backend:
+        aliases:
+          - "kafka2"
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka3
+    mem_limit: 1g
+    volumes:
+      - kafka3-data:/var/lib/kafka/data
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "9096:9092"
+      - "49092:29092"
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093,2@kafka2:9093,3@kafka3:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9092,PLAINTEXT_HOST://localhost:49092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+    networks:
+      backend:
+        aliases:
+          - "kafka3"
+
+  zipkin:
+    image: openzipkin/zipkin
+    mem_limit: 256m
+    cpus: "0.50"
+    ports:
+      - "9411:9411"
+    networks:
+      backend:
+        aliases:
+          - "zipkin-server"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.0
+    container_name: elasticsearch
+    mem_limit: 1536m
+    cpus: "1.50"
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      sh -c '
+        if [ -d /usr/share/elasticsearch/plugins/analysis-nori ]; then
+          echo "[ES] analysis-nori already installed";
+        else
+          echo "[ES] installing analysis-nori...";
+          bin/elasticsearch-plugin install --batch analysis-nori;
+        fi;
+        exec /usr/local/bin/docker-entrypoint.sh elasticsearch
+      '
+    environment:
+      - node.name=elasticsearch
+      - discovery.type=single-node
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms768m -Xmx768m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9300:9300
+      - 9200:9200
+    healthcheck:
+      # /bin/sh를 써서 9200 포트가 대답을 하는지 끈질기게 확인.
+      test: [ "CMD-SHELL", "nc -z localhost 9200 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks:
+      backend:
+        aliases:
+          - "elasticsearch"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.18.0
+    container_name: kibana
+    mem_limit: 512m
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      ELASTICSEARCH_URL: "http://elasticsearch:9200"
+      NODE_OPTIONS: "--max-old-space-size=384"
+    ports:
+      - 5601:5601
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      backend:
+        aliases:
+          - "kibana"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.18.0
+    container_name: logstash
+    mem_limit: 512m
+    cpus: "0.75"
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ./config:/usr/share/logstash/pipeline/
+      - ./libs/postgresql.jar:/usr/share/logstash/logstash-core/lib/jars/postgresql.jar:ro
+    ports:
+      - "5000:5000"
+    environment:
+      - xpack.monitoring.enabled=false
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    depends_on:
+      database:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      backend:
+        aliases:
+          - "logstash"
+
+  # Redis — 별칭을 'redis'로 통일 (Gateway application.yml의 host: redis와 일치)
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    mem_limit: 256m
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass 1234
+    networks:
+      backend:
+        aliases:
+          - "redis"        # Gateway/Auth 서버 모두 host: redis 로 접근
+          - "redisserver"  # 기존 별칭 유지 (하위 호환)
+
+  vault:
+    image: hashicorp/vault
+    user: root
+    container_name: dseum-vault
+    mem_limit: 256m
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "eum-root"
+      VAULT_LOCAL_CONFIG: '{"disable_mlock": true}'
+    volumes:
+      - ./vault/config:/vault/config
+      - ./vault/file:/vault/data
+      - ./vault/vault-init.sh:/vault/vault-init.sh
+    networks:
+      backend:
+        aliases:
+          - "dseum-vault"   # configserver/gateway의 SPRING_CLOUD_VAULT_HOST와 일치
+          - "vaultserver"   # 기존 별칭 유지
+    command: ["sh", "/vault/vault-init.sh"]
+
+
+  configserver:
+    image: dseum/configserver:0.0.1-SNAPSHOT
+    container_name: configserver
+    mem_limit: 512m
+    ports:
+      - "8071:8071"
+    environment:
+      #      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: ${CONFIG_GIT_URI}
+      #      SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME: ${CONFIG_GIT_USER}
+      #      SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD: ${CONFIG_GIT_TOKEN}
+      SPRING_CONFIG_IMPORT: "optional:vault://dseum-vault:8200"
+      SPRING_PROFILES_ACTIVE: vault
+      SPRING_CLOUD_CONFIG_SERVER_VAULT_HOST: "dseum-vault"
+      SPRING_CLOUD_CONFIG_SERVER_VAULT_PORT: 8200
+      SPRING_CLOUD_CONFIG_SERVER_VAULT_SCHEME: "http"
+      SPRING_CLOUD_CONFIG_SERVER_VAULT_AUTHENTICATION: "TOKEN"
+      SPRING_CLOUD_CONFIG_SERVER_VAULT_TOKEN: "eum-root"
+      SPRING_CLOUD_CONFIG_SERVER_VAULT_KV_VERSION: 2
+      SPRING_CLOUD_VAULT_HOST: dseum-vault
+      SPRING_CLOUD_VAULT_PORT: 8200
+      SPRING_CLOUD_VAULT_TOKEN: eum-root
+      SPRING_CLOUD_VAULT_SCHEME: http
+      SPRING_CLOUD_VAULT_AUTHENTICATION: TOKEN
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    networks:
+      backend:
+        aliases:
+          - "configserver"
+    depends_on:
+      - vault
+
+  eurekaserver:
+    image: dseum/eurekaserver:0.0.1-SNAPSHOT
+    mem_limit: 384m
+    ports:
+      - "8070:8070"
+    depends_on:
+      database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "eurekaserver"
+
+  # Auth 서버 — Gateway보다 먼저 완전히 떠 있어야 JWKS 초기화 가능
+  authserver:
+    image: dseum/authserver:0.0.1-SNAPSHOT
+    mem_limit: 512m
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "8090:8090"
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "authserver"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eurekaserver:8070/eureka/
+      - SPRING_APPLICATION_NAME=authserver
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://configserver:8071
+      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
+    healthcheck:
+      # JWKS보다 가벼운 헬스 엔드포인트로 초기 기동 상태를 판별
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q '\"status\":\"UP\"' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  gatewayserver:
+    image: dseum/gatewayserver:0.0.1-SNAPSHOT
+    mem_limit: 512m
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "8072:8072"
+    environment:
+      SERVER_PORT: "8072"
+      CONFIGSERVER_URI: "http://configserver:8071"
+      EUREKASERVER_URI: "http://eurekaserver:8070/eureka/"
+      EUREKASERVER_PORT: "8070"
+      CONFIGSERVER_PORT: "8071"
+      SPRING_CLOUD_VAULT_HOST: dseum-vault
+      SPRING_CLOUD_VAULT_PORT: 8200
+      SPRING_CLOUD_VAULT_TOKEN: eum-root
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    # 서버 로그 파일 위치
+    volumes:
+      - ./gatewayserver/logs:/app/logs
+      - ./vault/file:/vault/data:ro
+    depends_on:
+      database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+      # Auth 서버 JWKS가 준비된 후 Gateway 기동 — PublicKeyCache 초기화 보장
+      authserver:
+        condition: service_healthy
+    networks:
+      backend:
+        aliases:
+          - "gatewayserver"
+
+  dseumorders:
+    image: dseum/orderserver:0.0.2-SNAPSHOT
+    mem_limit: 512m
+    environment:
+      - DATABASESERVER_PORT=5432
+      # 1. 이름표는 여전히 중요합니다! (깃허브 파일명과 일치)
+      - SPRING_APPLICATION_NAME=dseum-order
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:vault://,optional:configserver:http://configserver:8071
+      - CONFIGSERVER_URI=http://configserver:8071
+      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
+      - VAULT_HOST=dseum-vault
+      - VAULT_PORT=8200
+      - VAULT_SCHEME=http
+      - VAULT_TOKEN=eum-root
+      - SPRING_CLOUD_VAULT_HOST=dseum-vault
+      - SPRING_CLOUD_VAULT_PORT=8200
+      - SPRING_CLOUD_VAULT_SCHEME=http
+      - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
+      - SPRING_CLOUD_VAULT_TOKEN=eum-root
+      - STREAM_INSTANCE_COUNT=1
+      - STREAM_INSTANCE_INDEX=0
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
+    depends_on:
+      order-database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+      kafka:
+        condition: service_started
+      vault:
+        condition: service_started
+    ports:
+      - "8082:8989"
+    networks:
+      backend:
+        aliases:
+          - "orderserver"
+          - "dseumorders"
+
+  dseumcart:
+    image: dseum/cartserver:0.0.2-SNAPSHOT
+    container_name: cartserver
+    mem_limit: 512m
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_APPLICATION_NAME=dseum-cart
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://configserver:8071,optional:vault://
+      - CONFIGSERVER_URI=http://configserver:8071
+      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
+      - VAULT_HOST=dseum-vault
+      - VAULT_PORT=8200
+      - VAULT_SCHEME=http
+      - VAULT_TOKEN=eum-root
+      - SPRING_CLOUD_VAULT_HOST=dseum-vault
+      - SPRING_CLOUD_VAULT_PORT=8200
+      - SPRING_CLOUD_VAULT_SCHEME=http
+      - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
+      - SPRING_CLOUD_VAULT_TOKEN=eum-root
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
+    volumes:
+      - ./cartserver/logs:/app/logs
+    depends_on:
+      cart-database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+      kafka:
+        condition: service_started
+      vault:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "cartserver"
+          - "dseumcart"
+
+  dseumpayment:
+    image: dseum/paymentserver:0.0.1-SNAPSHOT
+    mem_limit: 512m
+    environment:
+      - SPRING_APPLICATION_NAME=dseum-payment
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://configserver:8071,optional:vault://
+      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
+      - SPRING_CLOUD_VAULT_HOST=dseum-vault
+      - SPRING_CLOUD_VAULT_PORT=8200
+      - SPRING_CLOUD_VAULT_TOKEN=eum-root
+      - SPRING_CLOUD_VAULT_SCHEME=http
+      - VAULT_HOST=dseum-vault
+      - VAULT_PORT=8200
+      - VAULT_SCHEME=http
+      - VAULT_TOKEN=eum-root
+      - PAYMENT_DB_URL=jdbc:postgresql://payment-database:5432/dseum_payment
+      - PAYMENT_DB_USERNAME=postgres
+      - PAYMENT_DB_PASSWORD=1234
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092,kafka2:9092,kafka3:9092
+      - STREAM_INSTANCE_COUNT=1
+      - STREAM_INSTANCE_INDEX=0
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
+    depends_on:
+      payment-database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+      kafka:
+        condition: service_started
+      vault:
+        condition: service_started
+    ports:
+      - "8083:8083"
+    networks:
+      backend:
+        aliases:
+          - "dseumpayment"
+          - "paymentserver"
+
+  dseumproducts:
+    image: dseum/productserver:0.0.1-SNAPSHOT
+    mem_limit: 512m
+    cpus: "1.00"
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "8081:8989"
+    depends_on:
+      product-database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "productserver"
+
+  dseumreview:
+    image: dseum/reviewserver:0.0.1-SNAPSHOT
+    mem_limit: 512m
+    ports:
+      - "8098:8098"
+    environment:
+      - AUTH_GRPC_HOST=authserver
+      - AUTH_GRPC_PORT=9093
+      - SPRING_APPLICATION_NAME=dseum-review
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://configserver:8071,optional:vault://
+      - SPRING_CLOUD_VAULT_ENABLED=true
+      - SPRING_CLOUD_VAULT_HOST=dseum-vault
+      - SPRING_CLOUD_VAULT_PORT=8200
+      - SPRING_CLOUD_VAULT_TOKEN=eum-root
+      - SPRING_CLOUD_VAULT_SCHEME=http
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
+    depends_on:
+      review-database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "reviewserver"
+
+  dseumboard:
+    image: dseum/boardserver:0.0.1-SNAPSHOT
+    mem_limit: 384m
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://configserver:8071
+      - SPRING_CLOUD_VAULT_ENABLED=true
+      - SPRING_CLOUD_VAULT_HOST=dseum-vault
+      - SPRING_CLOUD_VAULT_PORT=8200
+      - SPRING_CLOUD_VAULT_TOKEN=eum-root
+      - SPRING_CLOUD_VAULT_SCHEME=http
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
+    depends_on:
+      board-database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "boardserver"
+
+  dseumrag:
+    image: dseum/ragserver:0.0.1-SNAPSHOT
+    mem_limit: 768m
+    ports:
+      - "8099:8099"
+    env_file:
+      - ./vault/file/.env
+    environment:
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      - RAG_EMBEDDING_DIMENSION=3072
+      - RAG_ELASTICSEARCH_INDEX=rag-chunks-v2
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx384m
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./ragserver/logs:/app/logs
+      - ./vault/file:/vault/data
+    networks:
+      backend:
+        aliases:
+          - "ragserver"
+
+  dseumsearch:
+    image: dseum/searchserver:0.0.1-SNAPSHOT # 네가 빌드한 이미지 이름.
+    container_name: searchserver
+    mem_limit: 768m
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_APPLICATION_NAME=dseum-search
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://configserver:8071
+      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092,kafka2:9092,kafka3:9092
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eurekaserver:8070/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - SPRING_DATA_REDIS_HOST=redis   # 💡 명시적 지정
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=1234
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx384m
+    volumes:
+      - ./searchserver/logs:/app/logs
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      configserver:
+        condition: service_started
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "dseum-search"
+          - "searchserver"
+
+  prometheus:
+    image: prom/prometheus:latest
+    mem_limit: 512m
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      backend:
+        aliases:
+          - "prometheus"
+
+  grafana:
+    image: grafana/grafana
+    restart: unless-stopped
+    mem_limit: 384m
+    ports:
+      - '13000:3000'
+    networks:
+      backend:
+        aliases:
+          - "grafana"
+
+  dseuminventory:
+    image: dseum/inventoryserver:0.0.1-SNAPSHOT
+    container_name: inventoryserver
+    mem_limit: 512m
+    ports:
+      - "8085:8989" # 호스트 8085 : 컨테이너 8989
+    environment:
+      - SPRING_APPLICATION_NAME=dseum-inventory
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://configserver:8071
+      - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eurekaserver:8070/eureka/
+      # Vault 설정 (필요 시)
+      - SPRING_CLOUD_VAULT_HOST=dseum-vault
+      - SPRING_CLOUD_VAULT_PORT=8200
+      - SPRING_CLOUD_VAULT_TOKEN=eum-root
+      - SPRING_CLOUD_VAULT_SCHEME=http
+      # Kafka 설정 (재고 차감 처리용)
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092,kafka2:9092,kafka3:9092
+      - STREAM_INSTANCE_COUNT=1
+      - STREAM_INSTANCE_INDEX=0
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
+    depends_on:
+      inventory-database:
+        condition: service_healthy
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+      kafka:
+        condition: service_started
+      vault:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "inventoryserver"
+
+
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.18.0
+    container_name: filebeat
+    mem_limit: 256m
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    user: root
+    volumes:
+      - ./gatewayserver/logs:/usr/share/filebeat/logs/gatewayserver:ro
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    command: ["--strict.perms=false"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - backend
+
+  connect:
+    image: debezium/connect:2.4 # 데베지움 전용 커넥트 이미지
+    container_name: connect
+    mem_limit: 768m
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "8086:8086" # 커넥터 등록 API 포트
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx384m
+      - BOOTSTRAP_SERVERS=kafka:9092,kafka2:9092,kafka3:9092
+      - CONNECT_BOOTSTRAP_SERVERS=kafka:9092,kafka2:9092,kafka3:9092
+      - GROUP_ID=1
+      - CONNECT_GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=my_connect_configs
+      - CONNECT_CONFIG_STORAGE_TOPIC=my_connect_configs
+      - OFFSET_STORAGE_TOPIC=my_connect_offsets
+      - CONNECT_OFFSET_STORAGE_TOPIC=my_connect_offsets
+      - STATUS_STORAGE_TOPIC=my_connect_statuses
+      - CONNECT_STATUS_STORAGE_TOPIC=my_connect_statuses
+      - CONFIG_STORAGE_REPLICATION_FACTOR=3
+      - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=3
+      - OFFSET_STORAGE_REPLICATION_FACTOR=3
+      - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=3
+      - STATUS_STORAGE_REPLICATION_FACTOR=3
+      - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=3
+      # ES로 데이터를 보내기 위한 Sink 커넥터 플러그인이 포함된 이미지를 쓰거나 추가.
+      - CONNECT_REST_PORT=8086
+      - CONNECT_REST_ADVERTISED_HOST_NAME=connect
+      - CONNECT_LISTENERS=http://0.0.0.0:8086
+    depends_on:
+      kafka:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8086/connectors" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - backend
+
+  connector-init: # debezium 초기 명령어 자동 실행
+    image: curlimages/curl:7.85.0
+    depends_on:
+      connect:
+        condition: service_healthy
+      payment-database:
+        condition: service_healthy
+      product-database:
+        condition: service_healthy
+      inventory-database:
+        condition: service_healthy
+      order-database:
+        condition: service_healthy
+      review-database:
+        condition: service_healthy
+      board-database:
+        condition: service_healthy
+    volumes:
+      - ./debezium/register-connector.sh:/register.sh
+    entrypoint: [ "/bin/sh", "/register.sh" ]
+    networks:
+      - backend
+
+volumes:
+  esdata1:
+    driver: local
+  postgres-data:
+    driver: local
+  product-postgres-data:
+    driver: local
+  inventory-postgres-data:
+    driver: local
+  cart-postgres-data:
+    driver: local
+  order-postgres-data:
+    driver: local
+  review-postgres-data:
+    driver: local
+  payment-postgres-data:
+    driver: local
+  board-postgres-data:
+    driver: local
+  kafka1-data:
+    driver: local
+  kafka2-data:
+    driver: local
+  kafka3-data:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge

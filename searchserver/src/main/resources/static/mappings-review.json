@@ -1,0 +1,37 @@
+{
+  "properties": {
+    "id": { "type": "long" },
+    "product_id": { "type": "long" },
+    "writer_name": {
+      "type": "text",
+      "analyzer": "nori_analyzer",
+      "fields": {
+        "keyword": { "type": "keyword" }
+      }
+    },
+    "content": {
+      "type": "text",
+      "analyzer": "nori_analyzer",
+      "fields": {
+        "keyword": { "type": "keyword" }
+      }
+    },
+    "star": { "type": "integer" },
+    "like_count": { "type": "long" },
+    "review_media_url": { "type": "keyword", "index": false },
+    "media_type": { "type": "keyword" },
+    "preference_score": { "type": "integer" },
+    "repurchase_score": { "type": "integer" },
+    "freshness_score": { "type": "integer" },
+    "created_at": {
+      "type": "date",
+      "format": "strict_date_optional_time||epoch_millis"
+    },
+    "deleted_at": {
+      "type": "date",
+      "format": "strict_date_optional_time||epoch_millis"
+    },
+    "deleted_by": { "type": "long" },
+    "delete_reason": { "type": "keyword" }
+  }
+}

@@ -1,0 +1,133 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.google.cloud.tools.jib'
+    id 'com.google.protobuf' version '0.9.4'
+}
+
+group = 'com.eum'
+version = '0.0.1-SNAPSHOT'
+description = 'reviewserver'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.1")
+    set('grpcVersion', "1.63.0")
+    set('protobufVersion', "3.25.5")
+}
+
+dependencies {
+    implementation project(':common-resources:s3')
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-vault-config'
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'net.devh:grpc-client-spring-boot-starter:3.1.0.RELEASE'
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+    runtimeOnly 'org.postgresql:postgresql'
+    annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testCompileOnly 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+jib {
+    from {
+        // Dockerfile의 FROM eclipse-temurin:17-jdk와 동일
+        image = 'eclipse-temurin:17-jdk'
+    }
+    to {
+        // dseum/reviewserver:0.0.1-SNAPSHOT 형태
+        image = "dseum/${project.name}"
+        tags = ["${project.version}", 'latest']
+    }
+    container {
+        // Dockerfile의 ENTRYPOINT 설정 자동화
+        // Jib는 알아서 lib, meta-inf, classes를 분리하여 클래스패스를 구성함
+        mainClass = 'com.eum.reviewserver.ReviewserverApplication'
+
+        // Dockerfile의 VOLUME /tmp
+        volumes = ['/tmp']
+
+        // Dockerfile의 LABEL maintainer
+        labels = [maintainer: 'dseum-review <lisepa7@gmail.com>']
+
+        // 환경 설정 및 인코딩
+        jvmFlags = ['-Dfile.encoding=UTF-8', '-server']
+
+        // 빌드 시간을 현재로 설정
+        creationTime = 'USE_CURRENT_TIMESTAMP'
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+def querydslDir = "src/main/generated"
+def protobufJavaDir = "build/generated/source/proto/main/java"
+def protobufGrpcDir = "build/generated/source/proto/main/grpc"
+
+sourceSets {
+    main.java.srcDirs += [ querydslDir, protobufJavaDir, protobufGrpcDir ]
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.getGeneratedSourceOutputDirectory().set(file(querydslDir))
+}
+
+clean {
+    delete file(querydslDir)
+}
+
+tasks.named('compileJava') {
+    dependsOn 'generateProto'
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.plugins {
+                grpc {}
+            }
+        }
+    }
+}

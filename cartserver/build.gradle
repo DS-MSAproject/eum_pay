@@ -1,0 +1,77 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.google.cloud.tools.jib' version '3.4.1'
+}
+
+group = 'com.eum'
+version = '0.0.2-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.1")
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    // Template leftovers. Re-enable when cart events are actually published/consumed.
+    // implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
+    // implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    runtimeOnly 'org.postgresql:postgresql'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation 'org.springframework.cloud:spring-cloud-starter-vault-config'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+jib {
+    from {
+        image = 'eclipse-temurin:17-jdk'
+    }
+    to {
+        image = "dseum/${project.name}"
+        tags = ["${project.version}", 'latest']
+    }
+    container {
+        mainClass = 'com.eum.cartserver.CartServerApplication'
+        volumes = ['/tmp']
+        labels = [maintainer: 'dseum-cart <team@eum.com>']
+        jvmFlags = ['-Dfile.encoding=UTF-8', '-server']
+        creationTime = 'USE_CURRENT_TIMESTAMP'
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

@@ -1,0 +1,120 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.google.cloud.tools.jib' version '3.4.1'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+group = 'com.eum'
+version = '0.0.1-SNAPSHOT'
+description = 'inventoryserver'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+bootJar {
+    enabled = true
+    archiveFileName = 'inventoryserver.jar'
+}
+
+jar {
+    enabled = false // 실행 가능한 jar만 만들 경우 일반 jar는 끕니다.
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.1")
+}
+
+dependencies {
+    //== Spring Web & JPA & AOP & Actuator ==//
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    //== Spring Cloud (Product와 동일하게 세팅) ==//
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-vault-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
+
+    //== QueryDSL (Jakarta 패키지 대응) ==//
+    implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+    annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+    //== Kafka / Stream ==//
+    implementation 'org.springframework.cloud:spring-cloud-stream'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+
+    //== DB (Product와 동일하게 PostgreSQL/H2) ==//
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.h2database:h2:2.1.214'
+
+    //== Lombok & Utils ==//
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    //== Test ==//
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+// Jib 설정 (이미지 이름과 메인 클래스 경로 수정)
+jib {
+    from {
+        image = 'eclipse-temurin:17-jdk'
+    }
+    to {
+        image = "dseum/inventoryserver" // 이미지 명칭 수정
+        tags = ["${project.version}", 'latest']
+    }
+    container {
+        // 메인 클래스 패키지 경로를 확인해주세요.
+        mainClass = 'com.eum.inventoryserver.InventoryServerApplication'
+        volumes = ['/tmp']
+        labels = [maintainer: 'dseum-inventory <lisepa7@gmail.com>']
+        jvmFlags = ['-Dfile.encoding=UTF-8', '-server']
+        creationTime = 'USE_CURRENT_TIMESTAMP'
+    }
+}
+
+// QueryDSL 빌드 옵션
+def querydslDir = "src/main/generated"
+
+sourceSets {
+    main.java.srcDirs += [ querydslDir ]
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.getGeneratedSourceOutputDirectory().set(file(querydslDir))
+}
+
+clean {
+    delete file(querydslDir)
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

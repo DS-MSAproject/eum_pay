@@ -1,0 +1,59 @@
+filebeat.inputs:
+  # 1. Gateway Server
+  - type: log
+    enabled: true
+    paths: ["/usr/share/filebeat/logs/gatewayserver/*.log"]
+    json.keys_under_root: true
+    fields: { service_name: gatewayserver }
+    fields_under_root: true
+
+  # 2. Config Server
+  - type: log
+    enabled: true
+    paths: ["/usr/share/filebeat/logs/configserver/*.log"]
+    json.keys_under_root: true
+    fields: { service_name: configserver }
+    fields_under_root: true
+
+  # 3. Eureka Server
+  - type: log
+    enabled: true
+    paths: ["/usr/share/filebeat/logs/eurekaserver/*.log"]
+    json.keys_under_root: true
+    fields: { service_name: eurekaserver }
+    fields_under_root: true
+
+  # 4. Auth Server
+  - type: log
+    enabled: true
+    paths: ["/usr/share/filebeat/logs/authserver/*.log"]
+    json.keys_under_root: true
+    fields: { service_name: authserver }
+    fields_under_root: true
+
+  # 5. Search Server (방금 살려낸 녀석!)
+  - type: log
+    enabled: true
+    paths: ["/usr/share/filebeat/logs/searchserver/*.log"]
+    json.keys_under_root: true
+    fields: { service_name: searchserver }
+    fields_under_root: true
+
+# 2. 어디로 배달할지 정해 (엘라스틱서치 8.18.0)
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  # 인덱스 이름을 날짜별로 예쁘게 만들고 싶다면 아래 주석을 풀어도 돼
+  # index: "dseum-logs-%{+yyyy.MM.dd}"
+
+# 3. 키바나 설정 (대시보드 등을 위해 필요해)
+setup.kibana:
+  host: "http://kibana:5601"
+
+# 4. 파일비트 자체 관리 설정
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat-*"
+
+# 권한 문제로 실행이 안 될 때를 대비해서 설정을 조금 유연하게.
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false

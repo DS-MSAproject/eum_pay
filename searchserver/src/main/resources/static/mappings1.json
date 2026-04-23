@@ -1,0 +1,38 @@
+{
+  "properties": {
+    "id": { "type": "long" },
+    "title": {
+      "type": "text",
+      "analyzer": "nori_analyzer",
+      "fields": {
+        "keyword": { "type": "keyword" },
+        "edge": { "type": "text", "analyzer": "edge_analyzer" },
+        "partial": { "type": "text", "analyzer": "ngram_analyzer" }
+      }
+    },
+    "content": {
+      "type": "text",
+      "analyzer": "nori_analyzer",
+      "fields": {
+        "edge": { "type": "text", "analyzer": "edge_analyzer" },
+        "partial": { "type": "text", "analyzer": "ngram_analyzer" }
+      }
+    },
+    "category": { "type": "keyword" },
+    "is_pinned": { "type": "boolean" },
+    "content_image_urls": { "type": "keyword", "index": false },
+    "actions": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "keyword" },
+        "target_url": { "type": "keyword", "index": false },
+        "action_type": { "type": "keyword" },
+        "sort_order": { "type": "integer" }
+      }
+    },
+    "created_at": {
+      "type": "date",
+      "format": "strict_date_optional_time||epoch_millis"
+    }
+  }
+}

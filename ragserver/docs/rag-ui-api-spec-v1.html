@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG UI API Specification (v1)</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    body { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; color: #111; line-height: 1.5; font-size: 11.2pt; }
+    h1 { font-size: 22pt; margin: 0 0 10px; }
+    h2 { font-size: 14.5pt; margin: 18px 0 8px; border-left: 4px solid #0f766e; padding-left: 8px; }
+    code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
+    pre { background: #0b1020; color: #e5ecff; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 9.5pt; line-height: 1.45; }
+    ul, ol { margin: 6px 0 10px 20px; }
+    li { margin-bottom: 4px; }
+    .meta { color: #555; }
+  </style>
+</head>
+<body>
+<h1>RAG UI API Specification (v1)</h1>
+<p class="meta">Base URL: <code>http://localhost:8099</code> / Prefix: <code>/api/v1/rag</code></p>
+
+<h2>Common Response Wrapper</h2>
+<pre>{
+  "code": "SUCCESS",
+  "message": "Request processed successfully.",
+  "data": {},
+  "timestamp": "2026-04-14T03:20:00Z"
+}</pre>
+
+<h2>Error Response</h2>
+<pre>{
+  "code": "DOC-415",
+  "message": "Unsupported file type.",
+  "path": "/api/v1/rag/documents",
+  "timestamp": "2026-04-14T03:20:00Z"
+}</pre>
+
+<h2>1) Document Upload</h2>
+<p><code>POST /api/v1/rag/documents</code></p>
+<p>Content-Type: <code>multipart/form-data</code></p>
+<ul>
+  <li><code>file</code> (required): <code>.pdf | .docx | .txt</code></li>
+  <li><code>document_id</code> (optional)</li>
+  <li><code>category</code> (optional)</li>
+</ul>
+<pre>{
+  "documentId": "petfood-openbook-v1",
+  "filename": "petfood-openbook-upload-ready.pdf",
+  "category": "FAQ",
+  "status": "pending",
+  "chunkCount": 0,
+  "message": "Document accepted. Parsing and indexing started asynchronously."
+}</pre>
+
+<h2>2) Document Status (Polling)</h2>
+<p><code>GET /api/v1/rag/documents/{documentId}</code></p>
+<pre>{
+  "documentId": "petfood-openbook-v1",
+  "filename": "petfood-openbook-upload-ready.pdf",
+  "category": "FAQ",
+  "status": "processed",
+  "errorMessage": null,
+  "chunkCount": 31,
+  "createdAt": "2026-04-14T03:00:00Z",
+  "updatedAt": "2026-04-14T03:00:20Z"
+}</pre>
+<p>Status values: <code>pending | parsing | embedding | indexing | processed | failed</code></p>
+
+<h2>3) Chunk Preview</h2>
+<p><code>GET /api/v1/rag/documents/{documentId}/chunks</code></p>
+<pre>{
+  "documentId": "petfood-openbook-v1",
+  "chunks": [
+    {
+      "chunkIndex": 0,
+      "chunkId": "uuid",
+      "header": "1. 서비스 범위",
+      "tokenCount": 120,
+      "content": "..."
+    }
+  ]
+}</pre>
+
+<h2>4) Hybrid Search</h2>
+<p><code>POST /api/v1/rag/search</code></p>
+<pre>{
+  "question": "주말 공휴일 운영 여부",
+  "topK": 5
+}</pre>
+<pre>{
+  "query": "주말 공휴일 운영 여부",
+  "topK": 5,
+  "results": [
+    {
+      "chunkId": "uuid",
+      "documentId": "petfood-openbook-v1",
+      "filename": "petfood-openbook-upload-ready.pdf",
+      "category": "FAQ",
+      "chunkIndex": 3,
+      "text": "주말/공휴일: 미운영 ...",
+      "score": 0.12
+    }
+  ]
+}</pre>
+
+<h2>5) Chat</h2>
+<p><code>POST /api/v1/rag/chat</code></p>
+<pre>{
+  "sessionId": "petfood-session-001",
+  "question": "주말 공휴일에도 상담 가능해?"
+}</pre>
+<pre>{
+  "sessionId": "petfood-session-001",
+  "rewrittenQuestion": "주말 공휴일에도 상담 가능해?",
+  "answer": "주말 및 공휴일에는 고객센터 운영을 하지 않습니다.\n[근거: SOURCE 1]",
+  "sources": [
+    {
+      "documentId": "petfood-openbook-v1",
+      "filename": "petfood-openbook-upload-ready.pdf",
+      "chunkId": "uuid",
+      "snippet": "주말/공휴일: 미운영 ...",
+      "score": 0.09
+    }
+  ]
+}</pre>
+
+<h2>6) Session History</h2>
+<p><code>GET /api/v1/rag/sessions/{sessionId}</code></p>
+<pre>{
+  "sessionId": "petfood-session-001",
+  "messageCount": 4,
+  "messages": [
+    { "role": "user", "content": "주말 공휴일에도 상담 가능해?", "timestamp": 1713060000000 },
+    { "role": "assistant", "content": "주말 및 공휴일에는 ...", "timestamp": 1713060000100 }
+  ]
+}</pre>
+
+<h2>7) Ops Endpoints</h2>
+<ul>
+  <li><code>GET /actuator/health</code></li>
+  <li><code>GET /actuator/prometheus</code></li>
+</ul>
+
+<h2>Recommended Frontend Flow</h2>
+<ol>
+  <li>Upload document</li>
+  <li>Poll status every 2-3 seconds</li>
+  <li>Enable search/chat only after <code>processed</code></li>
+  <li>Render <code>sources</code> as evidence panel</li>
+</ol>
+
+<p class="meta">Generated date: 2026-04-14</p>
+</body>
+</html>

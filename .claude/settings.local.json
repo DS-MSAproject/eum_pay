@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew :paymentserver:compileJava :inventoryserver:compileJava)",
+      "Bash(mmdc --version)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(mmdc -i 01-system-architecture.mmd -o 01-system-architecture.png -p puppeteer-config.json --width 2400 --height 1600)",
+      "Bash(mmdc -i 02-payment-confirm-flow.mmd -o 02-payment-confirm-flow.png -p puppeteer-config.json --width 2000 --height 2400)",
+      "Bash(mmdc -i 03-event-chain.mmd -o 03-event-chain.png -p puppeteer-config.json --width 2400 --height 1200)",
+      "Bash(mmdc -i 04-circuit-breaker.mmd -o 04-circuit-breaker.png -p puppeteer-config.json --width 1600 --height 1200)",
+      "Bash(mmdc -i 05-improvements.mmd -o 05-improvements.png -p puppeteer-config.json --width 2200 --height 1400)",
+      "Bash(grep -E \"\\\\.\\(mmd|png\\)$\")",
+      "Bash(npx --yes @mermaid-js/mermaid-cli mmdc -i 06-order-to-payment-init.mmd -o 06-order-to-payment-init.png -p puppeteer-config.json --width 1600 --height 1200)",
+      "Bash(npx @mermaid-js/mermaid-cli mmdc --help)",
+      "Bash(npx @mermaid-js/mermaid-cli -i 06-order-to-payment-init.mmd -o 06-order-to-payment-init.png -p puppeteer-config.json -w 1600 -H 1200)",
+      "Bash(xargs grep *)"
+    ]
+  }
+}

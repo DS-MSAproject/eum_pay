@@ -1,0 +1,62 @@
+sequenceDiagram
+    autonumber
+    participant FE  as 프론트엔드 (React)
+    participant GW  as gatewayserver
+    participant OS  as orderserver (OrderService)
+    participant PD  as productserver (Feign)
+    participant ODB as order DB (PostgreSQL)
+    participant OOB as order_outbox
+    participant DEB as Debezium CDC
+    participant K   as Kafka
+    participant INV as inventoryserver
+    participant PAY as paymentserver
+    participant Toss as Toss JS SDK / API
+
+    Note over FE,Toss: [1단계] 주문 생성 — 동기 흐름 (HTTP)
+
+    FE->>GW: POST /orders  { userId, items[{productId, qty, price}] }
+    GW->>OS: OrderRequest 전달
+
+    rect rgb(220, 240, 255)
+        Note over OS,ODB: @Transactional — 단일 원자적 트랜잭션
+        OS->>OS: validateOrderRequest() — items 비어있는지 확인
+
+        OS->>PD: POST /product/checkout/validate (Feign)<br/>{ items[{productId, qty, unitPrice}] }
+        PD-->>OS: CheckoutValidationResponse<br/>{ validatedItems[{productId, serverPrice, valid}] }
+
+        OS->>OS: calculateTotalAmount()<br/>클라이언트 금액 vs 서버 금액 정합성 검증<br/>불일치 시 IllegalArgumentException
+
+        OS->>ODB: Orders 저장<br/>state = ORDER_CHECKED_OUT
+        OS->>ODB: OrderHistory 항목 저장 (상품별 스냅샷)
+        OS->>OOB: order_outbox INSERT<br/>event_type = OrderCheckedOut<br/>payload = { orderId, userId, items, totalAmount }
+    end
+
+    OS-->>GW: 201 Created  { orderId }
+    GW-->>FE: 201 Created  { orderId }
+
+    Note over FE,Toss: [2단계] Toss 결제창 진입 — 프론트엔드 클라이언트 사이드
+
+    FE->>Toss: toss.requestPayment("카드", {<br/>  orderId,  amount,  orderName,<br/>  successUrl, failUrl<br/>})
+    Note over FE,Toss: 사용자가 Toss 결제창에서 결제 수단 선택 및 인증 완료
+
+    Toss-->>FE: successUrl 리다이렉트<br/>?paymentKey=...&orderId=...&amount=...
+
+    Note over FE,PAY: [3단계] 결제 승인 요청 — paymentserver confirm 플로우 진입
+
+    FE->>GW: POST /payments/{orderId}/confirm<br/>{ paymentKey, orderId, amount }
+    GW->>PAY: confirm 처리 시작<br/>(→ 02-payment-confirm-flow 참조)
+
+    Note over DEB,PAY: [비동기 병렬 흐름] Outbox → Kafka 이벤트 체인
+
+    rect rgb(245, 245, 245)
+        Note over OOB,PAY: Debezium CDC가 order_outbox를 감지하는 즉시 시작 (비동기)
+        DEB->>OOB: order_outbox INSERT 감지 (CDC polling)
+        DEB->>K: OrderCheckedOut 토픽 발행
+
+        K->>INV: inventoryserver 소비<br/>재고 예약 (RESERVED)
+        INV->>K: PaymentRequested 토픽 발행
+
+        K->>PAY: paymentserver 소비<br/>Payment 레코드 생성 (state=READY)<br/>idempotencyKey 부여
+    end
+
+    Note over PAY,Toss: paymentserver가 Payment(READY) 레코드를 보유한 상태에서<br/>confirm 요청이 도착해야 Phase 1 DB 조회 성공

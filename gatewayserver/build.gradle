@@ -1,0 +1,115 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    // id 'com.palantir.docker' version '0.35.0'
+    id 'com.google.cloud.tools.jib' version '3.4.1'
+}
+
+group = 'com.eum'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.1")
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // [추가] cd 보안 설정
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    implementation 'org.json:json:20231013'
+
+    //== Spring Cloud ==//
+    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // [추가] 리액티브 보안 테스트
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6' // authserver 버전과 맞춤
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // Redis (블랙리스트 확인)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+
+    // JSON 파싱 (JWKS 로딩)
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // Rate Limiting (Gateway 서버에 추가)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+
+    // Vault 서버
+    implementation 'org.springframework.cloud:spring-cloud-starter-vault-config'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+//docker {
+//    // Dockerfile을 직접 지정
+//    name("eum/${project.name}:${version}")
+//    dockerfile file('Dockerfile_')
+//    // 빌드에 사용할 파일 지정
+//    files bootJar
+//    buildArgs(['JAR_FILE': bootJar.archiveFileName.get()])
+//}
+
+jib {
+    from {
+        // Dockerfile의 FROM eclipse-temurin:17-jdk와 동일
+        image = 'eclipse-temurin:17-jdk'
+    }
+    to {
+        // dseum/productserver:0.0.1-SNAPSHOT 형태
+        image = "dseum/${project.name}"
+        tags = ["${project.version}", 'latest']
+    }
+    container {
+        // Dockerfile의 ENTRYPOINT 설정 자동화
+        // Jib는 알아서 lib, meta-inf, classes를 분리하여 클래스패스를 구성함
+        mainClass = 'com.eum.gatewayserver.ApiGatewayServerApplication'
+
+        // Dockerfile의 VOLUME /tmp
+        volumes = ['/tmp']
+
+        // Dockerfile의 LABEL maintainer
+        labels = [maintainer: 'dseum-gateway <lisepa7@gmail.com>']
+
+        // 환경 설정 및 인코딩
+        jvmFlags = ['-Dfile.encoding=UTF-8', '-server']
+
+        // 빌드 시간을 현재로 설정
+        creationTime = 'USE_CURRENT_TIMESTAMP'
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

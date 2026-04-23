@@ -1,0 +1,45 @@
+server:
+  port: 8070
+
+spring:
+  application:
+    name: dseum-eureka
+  config:
+    import: "optional:configserver:http://localhost:8071"
+  cloud:
+    config:
+      name: dseum-eureka
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+eureka:
+  server:
+    response-cache-auto-expiration-in-ms: 1000
+    expected-client-renewal-interval-seconds: 30
+  instance:
+    hostname: localhost
+  client:
+    registerWithEureka: false
+    fetchRegistry: false
+    serviceUrl:
+      defaultZone: http://eurekaserver:8070/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 💡 프로메테우스 지표 수집용 통로만 정밀하게 개방
+        include: "health,info,prometheus"
+
+  endpoint:
+    health:
+      access: read_only
+      show-details: always
+    prometheus:
+      access: read_only
+
+  metrics:
+    tags:
+      # 💡 인식표: "gatewayserver" (프로메테우스 지도와 일치시켜야 함)
+      application: ${spring.application.name}

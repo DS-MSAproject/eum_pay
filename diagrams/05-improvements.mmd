@@ -1,0 +1,37 @@
+flowchart LR
+    subgraph BEFORE["🔴 개선 전 문제점"]
+        direction TB
+        B1["재고 예약 + Outbox 저장\n별도 TX → 정합성 불보장"]
+        B2["Toss API CB · Timeout 없음\n장애 시 전체 결제 마비"]
+        B3["Kafka DLQ 없음\n메시지 유실 탐지 불가"]
+        B4["낙관적 락 없음\n동시 confirm → Lost Update"]
+        B5["idempotencyKey 재사용\n재시도 결제 실패 가능"]
+        B6["Outbox 이중 발행\n레거시 + canonical 토픽 동시"]
+        B7["paymentCancelStatusConsumer\n존재하지 않는 토픽 구독"]
+        B8["단일 Kafka 브로커\ninventoryserver kafka:9092"]
+    end
+
+    subgraph AFTER["🟢 개선 후"]
+        direction TB
+        A1["@Transactional 단일 경계\n재고 + Outbox 원자적 처리"]
+        A2["Resilience4j CB + Reactor Timeout\nCB OPEN → 즉시 503 빠른 실패"]
+        A3["enable-dlq: true\n14개 소비자 전체 DLQ 보호"]
+        A4["@Version 낙관적 락\n동시 요청 409 Conflict 반환"]
+        A5["refreshPrepareContext\n재시도 시 새 idempotencyKey 발급"]
+        A6["canonical 토픽만 단일 발행\n레거시 라인 완전 제거"]
+        A7["PaymentCancelled 토픽 구독\nDebezium 라우팅과 일치"]
+        A8["3-브로커 클러스터 적용\n고가용성 확보"]
+    end
+
+    subgraph MON["🔵 신규 추가"]
+        M1["PaymentOutboxMonitor\n5분마다 PENDING 이벤트 감시\nDebezium 장애 조기 탐지"]
+    end
+
+    B1 --> A1
+    B2 --> A2
+    B3 --> A3
+    B4 --> A4
+    B5 --> A5
+    B6 --> A6
+    B7 --> A7
+    B8 --> A8

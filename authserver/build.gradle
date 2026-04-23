@@ -1,0 +1,130 @@
+plugins {
+    // id 'com.palantir.docker' version '0.35.0'
+    id 'com.google.cloud.tools.jib' version '3.4.1'
+    id 'com.google.protobuf' version '0.9.4'
+}
+
+group = 'com.eum'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.1")
+    set('grpcVersion', "1.63.0")
+    set('protobufVersion', "3.25.5")
+}
+
+dependencies {
+    //== Spring Cloud ==//
+    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+    //== Auth & Security ==//
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    //== Database & JPA ==//
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'org.postgresql:postgresql'
+
+    //== JWT ==//
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // Vault
+    implementation 'org.springframework.vault:spring-vault-core:3.1.0'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // 이메일 발송
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // 입력값 검증
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'net.devh:grpc-server-spring-boot-starter:3.1.0.RELEASE'
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+//docker {
+//    name("eum/${project.name}:${version}")
+//    dockerfile file('Dockerfile_')
+//    files bootJar
+//    buildArgs(['JAR_FILE': bootJar.archiveFileName.get()])
+//}
+
+jib {
+    from {
+        // Dockerfile의 FROM eclipse-temurin:17-jdk와 동일
+        image = 'eclipse-temurin:17-jdk'
+    }
+    to {
+        // eum/productserver:0.0.1-SNAPSHOT 형태
+        image = "dseum/${project.name}"
+        tags = ["${project.version}", 'latest']
+    }
+    container {
+        // Dockerfile의 ENTRYPOINT 설정 자동화
+        // Jib는 알아서 lib, meta-inf, classes를 분리하여 클래스패스를 구성함
+        mainClass = 'com.eum.authserver.AuthserverApplication'
+
+        // Dockerfile의 VOLUME /tmp
+        volumes = ['/tmp']
+
+        // Dockerfile의 LABEL maintainer
+        labels = [maintainer: 'dseum-auth <lisepa7@gmail.com>']
+
+        // 환경 설정 및 인코딩
+        jvmFlags = ['-Dfile.encoding=UTF-8', '-server']
+
+        // 빌드 시간을 현재로 설정
+        creationTime = 'USE_CURRENT_TIMESTAMP'
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.plugins {
+                grpc {}
+            }
+        }
+    }
+}

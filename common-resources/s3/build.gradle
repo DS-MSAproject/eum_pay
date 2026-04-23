@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'org.springframework.boot' version '3.5.11'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.eum'
+version = '0.0.1-SNAPSHOT'
+description = 's3'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.0'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testCompileOnly 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// 부품 모듈이므로 실행 가능한 jar(bootJar) 생성도 방지하면 더 완벽합니다.
+bootJar {
+    enabled = false
+}
+jar {
+    enabled = true // 라이브러리로서의 본분만 다하게 함
+}
+
+tasks.named('copyCommonResources') {
+    // 💡 [핵심] 자기 자신의 컴파일이 반드시 먼저 끝나야 함을 선언!
+    dependsOn 'compileJava'
+
+    // 💡 만약 부모 모듈의 리소스가 필요하다면 아래처럼 추가
+    // dependsOn ':common-resources:processResources'
+
+    // 기존 copy 로직...
+}
+
+afterEvaluate {
+    if (tasks.findByName('jib')) {
+        jib {
+            container {
+                mainClass = 'fake.Main' // 가짜 메인 클래스 지정 (검사 통과용)
+            }
+        }
+        // 아예 태스크 자체를 빌드 그래프에서 제외 시도
+        tasks.named('jib') { enabled = false }
+        tasks.named('jibDockerBuild') { enabled = false }
+    }
+}

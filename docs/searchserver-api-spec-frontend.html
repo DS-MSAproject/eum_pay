@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Search Server API 명세 (Frontend)</title>
+  <style>
+    body { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; margin: 36px; color:#111; }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    h2 { font-size: 18px; margin-top: 26px; border-bottom:1px solid #ddd; padding-bottom:6px; }
+    h3 { font-size: 15px; margin-top: 18px; }
+    p, li { font-size: 12px; line-height: 1.5; }
+    code { background:#f4f4f4; padding:1px 4px; border-radius:4px; }
+    table { width:100%; border-collapse: collapse; margin-top:8px; }
+    th, td { border:1px solid #ddd; padding:8px; font-size: 12px; vertical-align: top; }
+    th { background:#fafafa; text-align:left; }
+    .mono { font-family: Consolas, monospace; }
+    .small { color:#555; font-size:11px; }
+    pre { background:#f8f8f8; padding:10px; border:1px solid #eee; border-radius:6px; font-size:11px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <h1>Search Server API 명세 (Frontend)</h1>
+  <p class="small">대상: <code>/api/v1/search/**</code> · 기준일: 2026-04-15</p>
+
+  <h2>1. 공통 응답 포맷</h2>
+  <pre>{
+  "status": "success",
+  "totalElements": 100,
+  "totalPages": 9,
+  "currentPage": 0,
+  "size": 12,
+  "isFirst": true,
+  "isLast": false,
+  "hasNext": true,
+  "hasPrevious": false,
+  "extra": {},
+  "data": []
+}</pre>
+  <p>인증은 게이트웨이 정책에 따르며, 보호 경로에서는 <code>Authorization</code> 헤더가 필요할 수 있습니다.</p>
+
+  <h2>2. 상품 검색</h2>
+  <h3>GET <span class="mono">/api/v1/search/products</span></h3>
+  <table>
+    <tr><th>Query</th><th>설명</th></tr>
+    <tr><td>title</td><td>상품명 검색어</td></tr>
+    <tr><td>keyword</td><td>보조 검색어</td></tr>
+    <tr><td>category</td><td>대카테고리 (기본: ALL)</td></tr>
+    <tr><td>subCategory</td><td>소카테고리</td></tr>
+    <tr><td>sortType</td><td>최신순 / 판매량순 / 가격 높은순 / 가격 낮은순</td></tr>
+    <tr><td>page</td><td>페이지 (기본 0)</td></tr>
+  </table>
+  <p><b>data[] 필드</b>: <code>id, imageUrl, productTitle, originalPrice, price, discountRate, discountTag, isNew, productTag, productUrl, category</code></p>
+
+  <h2>3. 베스트셀러</h2>
+  <h3>GET <span class="mono">/api/v1/search/products/bestseller</span></h3>
+  <p>현재 구현은 검색 랭킹 기반입니다(실판매량 집계 아님).</p>
+  <p><b>data[] 필드</b>: <code>id, imageUrl, productTitle, price, salesRank, rankTag, productUrl</code></p>
+
+  <h2>4. 홈 베스트셀러</h2>
+  <h3>GET <span class="mono">/api/v1/search/products/home-bestseller</span></h3>
+  <table>
+    <tr><th>Query</th><th>설명</th></tr>
+    <tr><td>size</td><td>노출 개수 (기본 3)</td></tr>
+  </table>
+  <p><b>data[] 필드</b>: <code>rank, id, imageUrl, productTitle, price, score, salesCount, createdAt, productUrl</code></p>
+
+  <h2>5. 유사 상품 추천 (상세 페이지용)</h2>
+  <h3>GET <span class="mono">/api/v1/search/products/{productId}/similar</span></h3>
+  <table>
+    <tr><th>Path/Query</th><th>설명</th></tr>
+    <tr><td>productId</td><td>기준 상품 ID</td></tr>
+    <tr><td>size</td><td>반환 개수 (기본 3)</td></tr>
+  </table>
+  <p><b>data[] 필드 (슬림 DTO)</b>: <code>productId, imageUrl, title, tags, price</code></p>
+  <p><b>tags 규칙</b>: 다중 태그 배열, 우선순위 <code>[NEW]</code> 먼저 후 <code>[판매 1위/2위/3위]</code></p>
+  <pre>{
+  "productId": 185,
+  "imageUrl": "https://...",
+  "title": "오독오독 사료",
+  "tags": ["[NEW]", "[판매 2위]"],
+  "price": 12900
+}</pre>
+
+  <h2>6. 자동완성</h2>
+  <h3>GET <span class="mono">/api/v1/search/products/autocomplete</span></h3>
+  <table>
+    <tr><th>Query</th><th>설명</th></tr>
+    <tr><td>name</td><td>자동완성 입력 문자열</td></tr>
+  </table>
+  <p>응답은 배열이며 각 항목은 <code>id, title</code> 입니다.</p>
+
+  <h2>7. 인기 검색어</h2>
+  <h3>GET <span class="mono">/api/v1/search/products/trending</span></h3>
+  <p>응답 배열 각 항목: <code>rank, keyword, score</code></p>
+
+  <h2>8. 리뷰 검색</h2>
+  <h3>GET <span class="mono">/api/v1/search/reviews</span></h3>
+  <table>
+    <tr><th>Query</th><th>설명</th></tr>
+    <tr><td>productId</td><td>상품 ID 필터</td></tr>
+    <tr><td>keyword</td><td>리뷰 내용/작성자 검색어</td></tr>
+    <tr><td>sortType</td><td>BEST 또는 최신순</td></tr>
+    <tr><td>reviewType</td><td>ALL / PHOTO / IMAGE / VIDEO / TEXT</td></tr>
+    <tr><td>page, size</td><td>페이징 (기본 0, 5)</td></tr>
+  </table>
+
+  <h2>9. 공지 검색</h2>
+  <h3>GET <span class="mono">/api/v1/search/notices</span></h3>
+  <table>
+    <tr><th>Query</th><th>설명</th></tr>
+    <tr><td>searchRange</td><td>전체 / 일주일 / 한달 / 세달</td></tr>
+    <tr><td>searchType</td><td>제목 등</td></tr>
+    <tr><td>keyword</td><td>검색어</td></tr>
+    <tr><td>page, size</td><td>페이징</td></tr>
+  </table>
+
+  <h2>10. 프론트 적용 메모</h2>
+  <p>상세 페이지의 "이런 제품은 어때요?" 섹션은 <code>/products/{productId}/similar?size=3</code> 고정 사용을 권장합니다.</p>
+  <p>UI 태그는 <code>tags[]</code> 순서를 그대로 렌더링하면 우선순위 정책이 자동 반영됩니다.</p>
+</body>
+</html>

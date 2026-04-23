@@ -1,0 +1,15 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+    import: optional:vault://
+  cloud:
+    vault:
+      enabled: true
+      uri: ${VAULT_URI}
+      authentication: TOKEN
+      token: ${VAULT_TOKEN}
+      kv:
+        enabled: true
+        backend: secret
+        default-context: dseum-rag
