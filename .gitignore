@@ -192,7 +192,25 @@ gemini_key.txt
 keys.txt
 
 # 로컬 개발용 환경 변수 파일
-docker-compose/vault/file/.env
 .env.local
+
+### Vault Runtime Storage ###
+# vault/file/ 은 Vault 컨테이너 기동 시 생성되는 런타임 데이터 디렉토리.
+# DB 패스워드, AWS 키, Gemini 키, Raft DB 등 실제 시크릿이 저장되므로 절대 커밋 금지.
+# git에 올라가야 하는 것은 config/ 설정 파일과 vault-init.sh 스크립트만임.
+docker-compose/vault/file/
+
+### Docker Environment Files ###
+docker-compose/.env
+docker-compose/docker-compose.override.yml
+
+### Spring Profile-specific Configs ###
+# -local, -secret 프로파일은 로컬 개발자 머신별 설정 또는 시크릿을 포함할 수 있음
+**/application-local.yml
+**/application-secret.yml
+
+### Claude Code Local Settings ###
+# .claude/ 는 머신별 Claude Code 권한 설정 파일이므로 공유하지 않음
+.claude/
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij,java,gradle

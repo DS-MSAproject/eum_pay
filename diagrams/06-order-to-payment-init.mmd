@@ -14,8 +14,8 @@ sequenceDiagram
 
     Note over FE,Toss: [1단계] 주문 생성 — 동기 흐름 (HTTP)
 
-    FE->>GW: POST /orders  { userId, items[{productId, qty, price}] }
-    GW->>OS: OrderRequest 전달
+    FE->>GW: POST /orders<br/>Header: X-User-Id: {userId}<br/>Body: { items[{productId, qty, price}] }
+    GW->>OS: X-User-Id 헤더 + OrderRequest 전달
 
     rect rgb(220, 240, 255)
         Note over OS,ODB: @Transactional — 단일 원자적 트랜잭션
