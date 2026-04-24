@@ -84,7 +84,7 @@ public class OrdersController {
         log.info("주문 취소 요청 수신: 주문 ID {}", orderId);
 
         try {
-            orderService.requestCancel(orderId);
+            orderService.requestCancel(orderId, "사용자 요청");
 
 //            ResponseEntity.ok();
 

@@ -32,13 +32,13 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     List<CartItem> findAllByCart_IdOrderByCreatedAtAsc(Long cartId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = """
             INSERT INTO cart_item (cart_id, item_id, option_id, quantity, is_selected, created_at, updated_at)
             VALUES (:cartId, :productId, :optionId, :quantity, :selected, :createdAt, :updatedAt)
             ON CONFLICT (cart_id, item_id, option_id) WHERE option_id IS NOT NULL
             DO UPDATE SET quantity = cart_item.quantity + EXCLUDED.quantity,
-                          is_selected = cart_item.is_selected OR EXCLUDED.is_selected,
+                          is_selected = cart_item.is_selected,
                           updated_at = EXCLUDED.updated_at
             """, nativeQuery = true)
     int upsertQuantity(@Param("cartId") Long cartId,
@@ -49,13 +49,13 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
                        @Param("createdAt") LocalDateTime createdAt,
                        @Param("updatedAt") LocalDateTime updatedAt);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = """
             INSERT INTO cart_item (cart_id, item_id, option_id, quantity, is_selected, created_at, updated_at)
             VALUES (:cartId, :productId, NULL, :quantity, :selected, :createdAt, :updatedAt)
             ON CONFLICT (cart_id, item_id) WHERE option_id IS NULL
             DO UPDATE SET quantity = cart_item.quantity + EXCLUDED.quantity,
-                          is_selected = cart_item.is_selected OR EXCLUDED.is_selected,
+                          is_selected = cart_item.is_selected,
                           updated_at = EXCLUDED.updated_at
             """, nativeQuery = true)
     int upsertQuantityWithoutOption(@Param("cartId") Long cartId,

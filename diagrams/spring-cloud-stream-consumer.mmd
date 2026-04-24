@@ -1,0 +1,77 @@
+flowchart TB
+    subgraph KAFKA["Kafka Cluster — Topics"]
+        direction LR
+        T1["OrderCheckedOut"]
+        T2["PaymentCompleted"]
+        T3["PaymentFailed"]
+        T4["PaymentCancelled"]
+    end
+
+    subgraph BINDER["Layer 3 — Spring Cloud Stream Kafka Binder  (auto-created at runtime)"]
+        direction LR
+        B1["Consumer Group\ninventory-order-checked-out-group"]
+        B2["Consumer Group\ninventory-payment-completed-group"]
+        B3["Consumer Group\ninventory-payment-failed-group"]
+        B4["Consumer Group\ninventory-payment-cancel-status-group"]
+    end
+
+    subgraph YAML["Layer 2 — application.yaml  (Binding: beanName-in-0 → Kafka topic)"]
+        direction LR
+        Y1["orderCheckedOutConsumer-in-0\ndestination: OrderCheckedOut\ngroup: inventory-order-checked-out-group"]
+        Y2["paymentCompletedConsumer-in-0\ndestination: PaymentCompleted\ngroup: inventory-payment-completed-group"]
+        Y3["paymentFailedConsumer-in-0\ndestination: PaymentFailed\ngroup: inventory-payment-failed-group"]
+        Y4["paymentCancelStatusConsumer-in-0\ndestination: PaymentCancelled\ngroup: inventory-payment-cancel-status-group"]
+    end
+
+    subgraph CONFIG["Layer 1 — InventoryEventConsumerConfig  (@Configuration — registers Consumer Beans)"]
+        direction LR
+        C1["@Bean\nConsumer&lt;OrderCheckedOutEvent&gt;\norderCheckedOutConsumer()"]
+        C2["@Bean\nConsumer&lt;PaymentStatusEvent&gt;\npaymentCompletedConsumer()"]
+        C3["@Bean\nConsumer&lt;PaymentStatusEvent&gt;\npaymentFailedConsumer()"]
+        C4["@Bean\nConsumer&lt;PaymentCancelStatusEvent&gt;\npaymentCancelStatusConsumer()"]
+    end
+
+    subgraph HANDLER["InventoryOrderEventHandler  (actual business logic)"]
+        direction LR
+        H1["handleOrderCheckedOut()\n→ reserveOrderStock()\n→ enqueue InventoryReserved + PaymentRequested"]
+        H2["handlePaymentCompletedTopic()\n→ tryConfirmReservedStock()\n→ enqueue InventoryDeducted"]
+        H3["handlePaymentFailedTopic()\n→ releaseReservedStock()\n→ enqueue InventoryReleased"]
+        H4["handlePaymentCancelStatus()\n→ releaseReservedStock()\n→ enqueue InventoryReleased"]
+    end
+
+    NOTE["Naming rule: {beanName}-in-0\n-in- = consumer (input)\n-0   = first channel index\nSpring Cloud Stream detects java.util.function.Consumer beans\nand wires them to Kafka topics via the binder automatically"]
+
+    T1 -->|"deserialize → OrderCheckedOutEvent"| B1
+    T2 -->|"deserialize → PaymentStatusEvent"| B2
+    T3 -->|"deserialize → PaymentStatusEvent"| B3
+    T4 -->|"deserialize → PaymentCancelStatusEvent"| B4
+
+    B1 --> Y1
+    B2 --> Y2
+    B3 --> Y3
+    B4 --> Y4
+
+    Y1 -->|"bean name match"| C1
+    Y2 -->|"bean name match"| C2
+    Y3 -->|"bean name match"| C3
+    Y4 -->|"bean name match"| C4
+
+    C1 -->|"handler::handleOrderCheckedOut"| H1
+    C2 -->|"handler::handlePaymentCompletedTopic"| H2
+    C3 -->|"handler::handlePaymentFailedTopic"| H3
+    C4 -->|"handler::handlePaymentCancelStatus"| H4
+
+    style KAFKA fill:#1a1a2e,color:#fff
+    style BINDER fill:#16213e,color:#fff
+    style YAML fill:#0f3460,color:#fff
+    style CONFIG fill:#533483,color:#fff
+    style HANDLER fill:#1b4332,color:#fff
+    style NOTE fill:#f8f9fa,color:#333,stroke:#adb5bd
+    style T1 fill:#4A90D9,color:#fff
+    style T2 fill:#27AE60,color:#fff
+    style T3 fill:#E74C3C,color:#fff
+    style T4 fill:#8E44AD,color:#fff
+    style H1 fill:#4A90D9,color:#fff
+    style H2 fill:#27AE60,color:#fff
+    style H3 fill:#E74C3C,color:#fff
+    style H4 fill:#8E44AD,color:#fff

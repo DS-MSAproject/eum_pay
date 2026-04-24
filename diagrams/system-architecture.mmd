@@ -1,0 +1,110 @@
+flowchart TB
+    Client["🖥️ Client\nFrontend + Toss JS SDK"]
+
+    subgraph GW["API Gateway"]
+        direction TB
+        gatewayserver["gatewayserver :8072"]
+    end
+
+    subgraph ORD["orderserver"]
+        direction TB
+        OrderSvc["OrderService\n@Transactional\nregister() / requestCancel()"]
+        OrdConsumer["OrderEventConsumer\n(state updater)"]
+        OrdOutbox[("PostgreSQL\norders / order_outbox")]
+    end
+
+    subgraph PAY["paymentserver :8083"]
+        direction TB
+        PaySvc["PaymentService\n3-Phase TransactionTemplate"]
+        TossClient["TossPaymentsClient\nCircuit Breaker · Timeout"]
+        PayMon["PaymentOutboxMonitor\n@Scheduled every 5 min — PENDING watch"]
+        PayDB[("PostgreSQL\noutbox_events / payments")]
+    end
+
+    subgraph TOSS_EXT["External PG"]
+        TossAPI["🏦 Toss Payments API\nhttps://api.tosspayments.com"]
+    end
+
+    subgraph INV["inventoryserver :8085"]
+        direction TB
+        InvHandler["InventoryOrderEventHandler\n@Transactional"]
+        InvOutbox[("PostgreSQL\ninventory_outbox / reservations")]
+    end
+
+    subgraph CDC["CDC — Debezium (PostgreSQL WAL → Kafka via EventRouter SMT)"]
+        direction LR
+        DebOrd["order-outbox connector\nroute.by.field: event_type"]
+        DebInv["inventory-outbox connector\nroute.by.field: topic"]
+        DebPay["payment-outbox connector\nroute.by.field: event_type"]
+    end
+
+    subgraph KAFKA["Apache Kafka — KRaft 3 Brokers"]
+        direction LR
+        subgraph ORD_T["Order Topics"]
+            T_OCO["OrderCheckedOut"]
+            T_OC["OrderCancelled"]
+        end
+        subgraph PAY_T["Payment Topics"]
+            T_PR["PaymentRequested"]
+            T_PC["PaymentCompleted"]
+            T_PF["PaymentFailed"]
+            T_PCAN["PaymentCancelled"]
+        end
+        subgraph INV_T["Inventory Topics"]
+            T_IR["InventoryReserved"]
+            T_IRF["InventoryReservationFailed"]
+            T_ID["InventoryDeducted"]
+            T_IDF["InventoryDeductionFailed"]
+            T_IREL["InventoryReleased"]
+            T_IRELF["InventoryReleaseFailed"]
+        end
+        subgraph DLQ_T["DLQ (error.topic.group — auto-created)"]
+            DLQ["All 14 consumers DLQ-protected"]
+        end
+    end
+
+    %% Order creation / cancel — HTTP path
+    Client -->|"POST /orders\nDELETE /orders/{id}"| gatewayserver
+    gatewayserver --> OrderSvc
+
+    %% OrderService writes atomically to order_outbox in same TX
+    OrderSvc -->|"@Transactional\norders + order_outbox atomic write"| OrdOutbox
+
+    %% Debezium CDC picks up order_outbox INSERT
+    OrdOutbox -->|"PostgreSQL WAL\nlogical replication"| DebOrd
+    DebOrd -->|"event_type = OrderCheckedOut"| T_OCO
+    DebOrd -->|"event_type = OrderCancelled"| T_OC
+
+    %% Payment confirm — HTTP path
+    Client -->|"POST /payments/confirm"| gatewayserver
+    gatewayserver --> PaySvc
+    PaySvc <--> TossClient
+    TossClient <-->|"HTTPS + CB"| TossAPI
+    PaySvc --> PayDB
+    PayMon -.->|"monitor / WARN log"| PayDB
+
+    %% Payment outbox → Kafka
+    PayDB -->|"PostgreSQL WAL"| DebPay
+    DebPay -->|"event_type = PaymentCompleted"| T_PC
+    DebPay -->|"event_type = PaymentFailed"| T_PF
+    DebPay -->|"event_type = PaymentCancelled"| T_PCAN
+
+    %% paymentserver consumes
+    T_PR -->|"DLQ-protected"| PaySvc
+    T_OC -->|"DLQ-protected"| PaySvc
+
+    %% inventoryserver consumes Order + Payment topics
+    T_OCO -->|"DLQ-protected"| InvHandler
+    T_PC & T_PF & T_PCAN -->|"DLQ-protected"| InvHandler
+
+    %% inventoryserver writes outbox → Kafka
+    InvHandler -->|"@Transactional\nreservations + inventory_outbox atomic write"| InvOutbox
+    InvOutbox -->|"PostgreSQL WAL"| DebInv
+    DebInv -->|"inventory_outbox.topic = PaymentRequested"| T_PR
+    DebInv -->|"inventory_outbox.topic = InventoryReserved / Failed"| T_IR & T_IRF
+    DebInv -->|"inventory_outbox.topic = InventoryDeducted / Failed"| T_ID & T_IDF
+    DebInv -->|"inventory_outbox.topic = InventoryReleased / Failed"| T_IREL & T_IRELF
+
+    %% orderserver consumes all downstream topics
+    T_IR & T_IRF & T_PC & T_PF & T_ID & T_IDF & T_IREL & T_IRELF -->|"DLQ-protected"| OrdConsumer
+    OrdConsumer -->|"order state update"| OrdOutbox

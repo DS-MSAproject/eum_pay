@@ -1,6 +1,7 @@
 package com.eum.orderserver.outbox;
 
 import com.eum.orderserver.dto.product.CheckoutValidationResponse;
+import com.eum.orderserver.message.order.OrderCancelledEvent;
 import com.eum.orderserver.message.order.OrderCheckedOutEvent;
 import com.eum.orderserver.message.order.OrderCompletedEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -34,6 +35,11 @@ public class OrderOutboxService {
     public void enqueueOrderCompleted(Long orderId, Long userId, Long amount) {
         enqueue(orderId, OutboxEventType.ORDER_COMPLETED,
                 OrderCompletedEvent.of(orderId, userId, amount));
+    }
+
+    public void enqueueOrderCancelled(Long orderId, Long userId, String reason) {
+        enqueue(orderId, OutboxEventType.ORDER_CANCELLED,
+                OrderCancelledEvent.of(orderId, userId, reason));
     }
 
     private void enqueue(Long orderId, OutboxEventType type, Object payload) {

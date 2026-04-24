@@ -48,7 +48,8 @@ vault kv put secret/dseum-search    @/vault/data/dseum-search.json    || true
 vault kv patch secret/dseum-search  @/vault/data/dseum-product-categories.json || true
 vault kv patch secret/dseum-search  @/vault/data/dseum-search-brand-story.json || true
 vault kv put secret/dseum-board     @/vault/data/dseum-board.json     || true
-vault kv put secret/dseum-review    @/vault/data/dseum-review.json     || true
+vault kv put secret/dseum-review    @/vault/data/dseum-review.json    || true
+vault kv put secret/authserver      @/vault/data/dseum-authserver.json || true
 
 GEMINI_ENV_PATH="/vault/data/.env"
 GEMINI_KEY_PATH="/vault/data/gemini_key.txt" # 도커 볼륨 마운트 경로 기준
@@ -111,7 +112,6 @@ if [ -f "$AWS_ENV_PATH" ]; then
     S3_BUCKET=$(grep "BUCKET" "$AWS_ENV_PATH" | cut -d'=' -f2 | tr -d '\n\r ')
 
     # 💡 [무결성 포인트] 모든 서버가 공통으로 참조하는 application 경로에 패치
-    # 혹은 각 dseum-xxx 경로에 개별 패치도 가능합니다.
     vault kv patch secret/application \
         cloud.aws.credentials.access-key="$ACCESS_KEY" \
         cloud.aws.credentials.secret-key="$SECRET_KEY" \
@@ -119,8 +119,19 @@ if [ -f "$AWS_ENV_PATH" ]; then
         cloud.aws.s3.bucket="$S3_BUCKET"
 
     echo "==> [완료] AWS IAM 및 S3 설정 주입 성공!"
+
+    # Toss 시크릿 키 — dseum-payment.json의 플레이스홀더를 실제값으로 덮어씁니다.
+    TOSS_SECRET_KEY=$(grep "^TOSS_SECRET_KEY=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
+    if [ -n "$TOSS_SECRET_KEY" ]; then
+        echo "==> [보안] Toss 시크릿 키를 금고에 저장합니다..."
+        vault kv patch secret/dseum-payment \
+            "payment.toss.secret-key"="$TOSS_SECRET_KEY"
+        echo "==> [완료] Toss 시크릿 키 패치 성공!"
+    else
+        echo "==> [경고] TOSS_SECRET_KEY가 .env에 없어 결제 서비스가 정상 동작하지 않을 수 있습니다."
+    fi
 else
-    echo "==> [경고] $AWS_ENV_PATH 파일을 찾을 수 없어 AWS 설정 주입을 건너뜜."
+    echo "==> [경고] $AWS_ENV_PATH 파일을 찾을 수 없어 AWS/Toss 설정 주입을 건너뜁니다."
 fi
 
 # 5. RSA 키쌍 자동 생성 → secret/auth/rsa 에 저장

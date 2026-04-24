@@ -132,6 +132,17 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex) {
+        log.error("cart illegal state: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.of(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "INTERNAL_SERVER_ERROR",
+                        ex.getMessage()
+                ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         log.error("cart internal error", ex);

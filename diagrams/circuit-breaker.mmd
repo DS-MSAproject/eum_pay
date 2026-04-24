@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> CLOSED : initial state
+
+    CLOSED --> CLOSED : call success
+
+    CLOSED --> OPEN : failure rate >= 50%\nmin 5 calls required\n\ncounted as failure\n  IOException\n  TimeoutException\n  WebClient 5xx / BadGateway / GatewayTimeout\n\nignored (not counted)\n  WebClient 4xx (BadRequest, Unprocessable)
+
+    OPEN --> OPEN : CallNotPermittedException\n-> immediate 503 (fast fail)\nwait duration 30s
+
+    OPEN --> HALF_OPEN : 30s elapsed\n3 probe calls permitted
+
+    HALF_OPEN --> CLOSED : all 3 probes succeed\n-> recovered
+
+    HALF_OPEN --> OPEN : any probe fails\n-> wait 30s again

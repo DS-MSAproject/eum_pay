@@ -1,0 +1,89 @@
+flowchart LR
+    CANCEL[/"External: Order Cancel Request"/]
+
+    subgraph ORD["orderserver — Order State Transitions"]
+        direction TB
+        CO["ORDER_CHECKED_OUT\nOrderService.register()"]
+        IR["INVENTORY_RESERVED"]
+        IR_F["INVENTORY_RESERVATION_FAILED ❌"]
+        PC["PAYMENT_COMPLETED\npaymentMethod recorded"]
+        PF["PAYMENT_FAILED ❌\nfailureCode recorded"]
+        OC["ORDER_COMPLETED ✅\npublishes OrderCompleted"]
+        DF["INVENTORY_DEDUCTION_FAILED ❌"]
+        RL["INVENTORY_RELEASED"]
+        RF["INVENTORY_RELEASE_FAILED ❌"]
+    end
+
+    subgraph INV["inventoryserver — Inventory Processing"]
+        direction TB
+        I_RES{"reserveOrderStock()\nper item in order"}
+        I_OK["InventoryReservation: PENDING\npublishes InventoryReserved\n+ PaymentRequested"]
+        I_FAIL_ACT["publishes\nInventoryReservationFailed"]
+        I_DED{"tryConfirmReservedStock()\ndeduct actual stock"}
+        I_DED_OK["InventoryReservation: CONFIRMED\nstock deducted\npublishes InventoryDeducted"]
+        I_DED_F_ACT["publishes\nInventoryDeductionFailed"]
+        I_REL{"releaseReservedStock()\nrestore reserved stock"}
+        I_REL_OK["InventoryReservation: RELEASED\nstock restored\npublishes InventoryReleased"]
+        I_REL_F_ACT["publishes\nInventoryReleaseFailed"]
+    end
+
+    subgraph PAY["paymentserver — Payment State Transitions"]
+        direction TB
+        P_READY["Payment: READY\nprepareRequestedPayment()"]
+        P_TOSS{"confirm() — Phase 2\nToss API POST /v1/payments/confirm\n10s timeout · Circuit Breaker"}
+        P_APPROVED["Payment: APPROVED\npaymentKey + method set\npublishes PaymentCompleted"]
+        P_FAILED_ST["Payment: FAILED\nfailureCode + message set\npublishes PaymentFailed"]
+        P_CANCELLED["Payment: CANCELED\ncancelApprovedPayment()\npublishes PaymentCancelled"]
+    end
+
+    CO -->|"OrderCheckedOut\n(order_outbox → Debezium CDC)"| I_RES
+    I_RES -->|"success"| I_OK
+    I_RES -->|"insufficient stock"| I_FAIL_ACT
+
+    I_OK -->|"InventoryReserved\n(inventory_outbox)"| IR
+    I_FAIL_ACT -->|"InventoryReservationFailed\n(inventory_outbox)"| IR_F
+    I_OK -->|"PaymentRequested\n(inventory_outbox)"| P_READY
+
+    P_READY -->|"POST /payments/confirm\n(frontend trigger)"| P_TOSS
+    P_TOSS -->|"DONE"| P_APPROVED
+    P_TOSS -->|"4xx / 5xx / timeout"| P_FAILED_ST
+
+    P_APPROVED -->|"PaymentCompleted\n(outbox_events → Debezium CDC)"| PC
+    P_APPROVED -->|"PaymentCompleted"| I_DED
+    I_DED -->|"success"| I_DED_OK
+    I_DED -->|"failure"| I_DED_F_ACT
+
+    I_DED_OK -->|"InventoryDeducted\n(inventory_outbox)"| OC
+    I_DED_F_ACT -->|"InventoryDeductionFailed\n(inventory_outbox)"| DF
+
+    P_FAILED_ST -->|"PaymentFailed\n(outbox_events)"| PF
+    P_FAILED_ST -->|"PaymentFailed"| I_REL
+
+    CANCEL -.->|"OrderCancelled\n(cancel path)"| P_CANCELLED
+    P_CANCELLED -->|"PaymentCancelled\n(outbox_events)"| I_REL
+
+    I_REL -->|"success"| I_REL_OK
+    I_REL -->|"failure"| I_REL_F_ACT
+    I_REL_OK -->|"InventoryReleased\n(inventory_outbox)"| RL
+    I_REL_F_ACT -->|"InventoryReleaseFailed\n(inventory_outbox)"| RF
+
+    style CO fill:#4A90D9,color:#fff
+    style IR fill:#7FB5E8,color:#fff
+    style PC fill:#7FB5E8,color:#fff
+    style P_READY fill:#7FB5E8,color:#fff
+    style I_OK fill:#27AE60,color:#fff
+    style I_DED_OK fill:#27AE60,color:#fff
+    style P_APPROVED fill:#27AE60,color:#fff
+    style OC fill:#27AE60,color:#fff
+    style I_REL_OK fill:#F39C12,color:#fff
+    style RL fill:#F39C12,color:#fff
+    style P_CANCELLED fill:#8E44AD,color:#fff
+    style CANCEL fill:#8E44AD,color:#fff
+    style IR_F fill:#E74C3C,color:#fff
+    style I_FAIL_ACT fill:#E74C3C,color:#fff
+    style PF fill:#E74C3C,color:#fff
+    style P_FAILED_ST fill:#E74C3C,color:#fff
+    style I_DED_F_ACT fill:#E74C3C,color:#fff
+    style DF fill:#E74C3C,color:#fff
+    style I_REL_F_ACT fill:#E74C3C,color:#fff
+    style RF fill:#E74C3C,color:#fff

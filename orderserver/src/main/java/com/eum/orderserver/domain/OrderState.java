@@ -15,7 +15,8 @@ public enum OrderState {
     INVENTORY_DEDUCTION_FAILED("재고차감실패"),
     INVENTORY_RELEASED("재고예약해제완료"),
     INVENTORY_RELEASE_FAILED("재고예약해제실패"),
-    ORDER_COMPLETED("주문완료");
+    ORDER_COMPLETED("주문완료"),
+    ORDER_CANCELLED("주문취소");
 
     private final String state;
 }

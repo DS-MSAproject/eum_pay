@@ -1,0 +1,165 @@
+sequenceDiagram
+    autonumber
+    participant FE  as Frontend (React)
+    participant GW  as gatewayserver
+    participant OS  as orderserver
+    participant PD  as productserver (Feign)
+    participant ODB as order DB (PostgreSQL)
+    participant OOB as order_outbox
+    participant DEB as Debezium CDC
+    participant K   as Kafka
+    participant INV as inventoryserver
+    participant PAY as paymentserver
+    participant SSE as PaymentSseService
+    participant Toss as Toss API
+
+    %%─────────────────────────────────────────
+    Note over FE,Toss: [Phase 1] Order Creation — Synchronous HTTP
+    %%─────────────────────────────────────────
+
+    FE->>GW: POST /orders<br/>{ items[{productId, qty, price}] }
+    GW->>OS: forward + X-User-Id header
+
+    rect rgb(220, 240, 255)
+        Note over OS,OOB: @Transactional — orders + order_outbox atomic write
+        OS->>OS: validateOrderRequest()
+        OS->>PD: POST /product/checkout/validate (Feign)<br/>{ items[{productId, qty, unitPrice}] }
+        PD-->>OS: CheckoutValidationResponse<br/>{ validatedItems, totalPrice, capturedAt }
+        OS->>OS: calculateTotalAmount()<br/>client price vs server price integrity check
+        OS->>ODB: save Orders (state = ORDER_CHECKED_OUT)
+        OS->>OOB: INSERT order_outbox<br/>event_type = OrderCheckedOut
+    end
+
+    OS-->>GW: 201 Created { orderId }
+    GW-->>FE: 201 Created { orderId }
+
+    %%─────────────────────────────────────────
+    Note over DEB,PAY: [Async — starts immediately after order_outbox INSERT]
+    %%─────────────────────────────────────────
+
+    rect rgb(245, 245, 245)
+        DEB->>OOB: PostgreSQL WAL — detects INSERT
+        DEB->>K: publish OrderCheckedOut
+
+        K->>INV: inventoryserver consumes OrderCheckedOut
+        rect rgb(235, 245, 235)
+            Note over INV: @Transactional — reservations + inventory_outbox atomic write
+            INV->>INV: reserveOrderStock()<br/>InventoryReservation → PENDING
+            INV->>K: publish InventoryReserved<br/>(inventory_outbox.topic → Debezium)
+            INV->>K: publish PaymentRequested<br/>(inventory_outbox.topic → Debezium)
+        end
+
+        K->>OS: orderserver consumes InventoryReserved
+        OS->>ODB: order state → INVENTORY_RESERVED
+
+        K->>PAY: paymentserver consumes PaymentRequested
+        PAY->>PAY: prepareRequestedPayment()<br/>Payment(READY) created
+    end
+
+    %%─────────────────────────────────────────
+    Note over FE,Toss: [Phase 2] Toss Payment Widget — Client Side
+    %%─────────────────────────────────────────
+
+    FE->>Toss: toss.requestPayment("CARD",<br/>{ orderId, amount, orderName, successUrl })
+    Note over FE,Toss: User selects card and completes authentication in Toss widget
+    Toss-->>FE: redirect successUrl<br/>?paymentKey=...&orderId=...&amount=...
+
+    %%─────────────────────────────────────────
+    Note over FE,SSE: [Phase 3] SSE Subscribe — before calling confirm
+    %%─────────────────────────────────────────
+
+    FE->>GW: GET /payments/orders/{orderId}/events (SSE)
+    GW->>PAY: SSE subscribe request
+    PAY->>SSE: subscribe(orderId)
+    SSE-->>FE: text/event-stream established (100ms heartbeat)
+
+    %%─────────────────────────────────────────
+    Note over FE,Toss: [Phase 4] Payment Confirmation — 3-Phase TX
+    %%─────────────────────────────────────────
+
+    FE->>GW: POST /payments/confirm<br/>{ paymentKey, orderId, amount }
+    GW->>PAY: confirm(request)
+
+    rect rgb(220, 240, 255)
+        Note over PAY,PAY: Phase 1 — short read TX (connection released immediately after)
+        PAY->>PAY: findByOrderId() + amount validation
+        PAY->>PAY: Payment(READY) confirmed<br/>DB connection returned to pool
+    end
+
+    rect rgb(255, 245, 200)
+        Note over PAY,Toss: Phase 2 — no DB connection held during external I/O
+        PAY->>Toss: POST /v1/payments/confirm<br/>idempotencyKey header · 10s timeout · Circuit Breaker
+
+        alt CB OPEN — failure rate >= 50%
+            Toss-->>PAY: CallNotPermittedException
+            PAY-->>GW: 503 Service Unavailable
+            GW-->>FE: 503 (no SSE event published)
+
+        else Toss approval success
+            Toss-->>PAY: TossPaymentResponse (DONE)
+            rect rgb(220, 255, 220)
+                Note over PAY,PAY: Phase 3 — write TX (@Version optimistic lock)
+                PAY->>PAY: payment.approve()<br/>+ INSERT outbox_events (event_type = PaymentCompleted)
+            end
+            PAY->>SSE: publishCompleted(payment)
+            SSE-->>FE: payment-status { status: APPROVED, approvedAt }
+            PAY-->>GW: 200 PaymentResponse (APPROVED)
+            GW-->>FE: 200 OK
+
+        else Toss error (4xx / 5xx) or Timeout (>10s)
+            Toss-->>PAY: WebClientResponseException / TimeoutException
+            rect rgb(255, 220, 220)
+                Note over PAY,PAY: Phase 3 — failure write TX
+                PAY->>PAY: payment.fail(errorCode)<br/>+ INSERT outbox_events (event_type = PaymentFailed)
+            end
+            PAY->>SSE: publishFailed(payment)
+            SSE-->>FE: payment-status { status: FAILED, failureCode }
+            PAY-->>GW: 500 error
+            GW-->>FE: 500 error
+        end
+    end
+
+    %%─────────────────────────────────────────
+    Note over DEB,OS: [Async — success path post-payment Kafka chain]
+    %%─────────────────────────────────────────
+
+    rect rgb(245, 245, 245)
+        DEB->>K: publish PaymentCompleted<br/>(outbox_events → Debezium)
+
+        K->>OS: orderserver consumes PaymentCompleted
+        OS->>ODB: order state → PAYMENT_COMPLETED
+
+        K->>INV: inventoryserver consumes PaymentCompleted
+        rect rgb(235, 245, 235)
+            Note over INV: @Transactional
+            INV->>INV: tryConfirmReservedStock()<br/>InventoryReservation → CONFIRMED<br/>actual stock deducted
+            INV->>K: publish InventoryDeducted<br/>(inventory_outbox.topic → Debezium)
+        end
+
+        K->>OS: orderserver consumes InventoryDeducted
+        OS->>ODB: order state → ORDER_COMPLETED
+        OS->>OOB: INSERT order_outbox<br/>event_type = OrderCompleted
+        DEB->>OOB: WAL polling
+        DEB->>K: publish OrderCompleted
+    end
+
+    %%─────────────────────────────────────────
+    Note over DEB,OS: [Async — failure path post-payment Kafka chain]
+    %%─────────────────────────────────────────
+
+    rect rgb(255, 240, 240)
+        DEB->>K: publish PaymentFailed<br/>(outbox_events → Debezium)
+
+        K->>OS: orderserver consumes PaymentFailed
+        OS->>ODB: order state → PAYMENT_FAILED
+
+        K->>INV: inventoryserver consumes PaymentFailed
+        rect rgb(245, 230, 230)
+            Note over INV: @Transactional
+            INV->>INV: releaseReservedStock()<br/>InventoryReservation → RELEASED<br/>stock restored
+            INV->>K: publish InventoryReleased<br/>(inventory_outbox.topic → Debezium)
+        end
+
+        K->>OS: orderserver consumes InventoryReleased
+        OS->>ODB: order state → INVENTORY_RELEASED
+    end

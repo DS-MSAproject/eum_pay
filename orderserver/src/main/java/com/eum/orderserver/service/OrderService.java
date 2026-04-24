@@ -199,8 +199,9 @@ public class OrderService {
             return;
         }
 
-        if (order.getOrderState() == OrderState.ORDER_COMPLETED) {
-            log.warn("{}번 완료 주문에 재고 예약 해제 이벤트가 도착했습니다.", order.getOrderId());
+        if (order.getOrderState() != OrderState.PAYMENT_FAILED
+                && order.getOrderState() != OrderState.ORDER_CANCELLED) {
+            log.warn("{}번 주문은 재고 해제 처리 대상 상태가 아닙니다: {}", order.getOrderId(), order.getOrderState());
             return;
         }
 
@@ -213,9 +214,9 @@ public class OrderService {
         Orders order = orderRepository.findById(event.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + event.getOrderId()));
 
-        if (order.getOrderState() == OrderState.ORDER_COMPLETED) {
-            log.warn("{}번 완료 주문에 재고 예약 해제 실패 이벤트가 도착했습니다: {}",
-                    order.getOrderId(), event.getReason());
+        if (order.getOrderState() != OrderState.PAYMENT_FAILED
+                && order.getOrderState() != OrderState.ORDER_CANCELLED) {
+            log.warn("{}번 주문은 재고 해제 실패 처리 대상 상태가 아닙니다: {}", order.getOrderId(), order.getOrderState());
             return;
         }
 
@@ -223,8 +224,20 @@ public class OrderService {
         log.warn("{}번 주문 재고 예약 해제 실패: {}", event.getOrderId(), event.getReason());
     }
 
-    public void requestCancel(Long orderId) {
-        throw new IllegalStateException("주문 취소는 현재 이벤트 흐름에서 비활성화되어 있습니다.");
+    @Transactional
+    public void requestCancel(Long orderId, String reason) {
+        Orders order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + orderId));
+
+        if (order.getOrderState() != OrderState.ORDER_COMPLETED
+                && order.getOrderState() != OrderState.PAYMENT_COMPLETED) {
+            throw new IllegalStateException(
+                    "취소 가능한 상태가 아닙니다. 현재 상태: " + order.getOrderState().getState());
+        }
+
+        order.setOrderState(OrderState.ORDER_CANCELLED);
+        outboxService.enqueueOrderCancelled(order.getOrderId(), order.getUserId(), reason);
+        log.info("{}번 주문 취소 요청. reason={}", orderId, reason);
     }
 
     @Transactional(readOnly = true)

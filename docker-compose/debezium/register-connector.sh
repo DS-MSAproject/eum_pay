@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Reads DB password from environment; falls back to "1234" for local dev only.
+DB_PASSWORD="${POSTGRES_PASSWORD:-1234}"
+
 upsert_connector() {
   CONNECTOR_NAME="$1"
   CONF_DATA="$2"
@@ -7,9 +10,12 @@ upsert_connector() {
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://connect:8086/connectors/$CONNECTOR_NAME")
 
   if [ "$STATUS" -eq 200 ]; then
-    echo "✅ 이미 '$CONNECTOR_NAME'이(가) 등록되어 있습니다. 재등록을 건너뜁니다."
+    echo "🔄 '$CONNECTOR_NAME' already exists — updating config."
+    curl -s -X PUT -H "Content-Type:application/json" \
+      "http://connect:8086/connectors/$CONNECTOR_NAME/config" \
+      -d "$(echo "$CONF_DATA" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(json.dumps(d["config"]))')"
   else
-    echo "🚀 '$CONNECTOR_NAME' 커넥터를 새로 등록합니다."
+    echo "🚀 Registering new connector '$CONNECTOR_NAME'."
     curl -i -X POST -H "Content-Type:application/json" \
       http://connect:8086/connectors/ -d "$CONF_DATA"
   fi
@@ -23,7 +29,7 @@ ASGARD_CONF='{
     "database.hostname": "product-database",
     "database.port": "5432",
     "database.user": "postgres",
-    "database.password": "1234",
+    "database.password": "'$DB_PASSWORD'",
     "database.dbname": "dseum_product",
     "plugin.name": "pgoutput",
     "topic.prefix": "asgard",
@@ -43,7 +49,7 @@ BOARD_NOTICE_CONF='{
     "database.hostname": "board-database",
     "database.port": "5432",
     "database.user": "postgres",
-    "database.password": "1234",
+    "database.password": "'$DB_PASSWORD'",
     "database.dbname": "dseum_board",
     "plugin.name": "pgoutput",
     "topic.prefix": "asgard",
@@ -55,7 +61,7 @@ BOARD_NOTICE_CONF='{
   }
 }'
 
-BOARD_FAQ_CONNECTOR_NAME="dseum-board-faq-connect"
+BOARD_FAQ_CONNECTOR_NAME="dseum-board-faq-connector"
 BOARD_FAQ_CONF='{
   "name": "'$BOARD_FAQ_CONNECTOR_NAME'",
   "config": {
@@ -63,7 +69,7 @@ BOARD_FAQ_CONF='{
     "database.hostname": "board-database",
     "database.port": "5432",
     "database.user": "postgres",
-    "database.password": "1234",
+    "database.password": "'$DB_PASSWORD'",
     "database.dbname": "dseum_board",
     "plugin.name": "pgoutput",
     "topic.prefix": "asgard",
@@ -83,7 +89,7 @@ REVIEW_CONF='{
     "database.hostname": "review-database",
     "database.port": "5432",
     "database.user": "postgres",
-    "database.password": "1234",
+    "database.password": "'$DB_PASSWORD'",
     "database.dbname": "dseum_review",
     "plugin.name": "pgoutput",
     "topic.prefix": "reviewdb",
@@ -102,14 +108,16 @@ ORDER_OUTBOX_CONF='{
     "database.hostname": "order-database",
     "database.port": "5432",
     "database.user": "postgres",
-    "database.password": "1234",
+    "database.password": "'$DB_PASSWORD'",
     "database.dbname": "dseum_order",
     "plugin.name": "pgoutput",
-    "topic.prefix": "orderdb",
+    "topic.prefix":
+    "orderdb",
     "table.include.list": "public.order_outbox",
     "slot.name": "order_outbox_slot",
     "publication.name": "order_outbox_publication",
     "publication.autocreate.mode": "filtered",
+    "snapshot.mode": "never",
     "tombstones.on.delete": "false",
     "transforms": "outbox",
     "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
@@ -130,7 +138,7 @@ INVENTORY_OUTBOX_CONF='{
     "database.hostname": "inventory-database",
     "database.port": "5432",
     "database.user": "postgres",
-    "database.password": "1234",
+    "database.password": "'$DB_PASSWORD'",
     "database.dbname": "dseum_inventory",
     "plugin.name": "pgoutput",
     "topic.prefix": "inventory_outbox",
@@ -138,7 +146,7 @@ INVENTORY_OUTBOX_CONF='{
     "slot.name": "inventory_outbox_slot",
     "publication.name": "inventory_outbox_publication",
     "publication.autocreate.mode": "filtered",
-    "snapshot.mode": "initial",
+    "snapshot.mode": "never",
     "tombstones.on.delete": "false",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -164,7 +172,7 @@ PAYMENT_OUTBOX_CONF='{
     "database.hostname": "payment-database",
     "database.port": "5432",
     "database.user": "postgres",
-    "database.password": "1234",
+    "database.password": "'$DB_PASSWORD'",
     "database.dbname": "dseum_payment",
     "plugin.name": "pgoutput",
     "topic.prefix": "paymentdb",
@@ -189,13 +197,13 @@ PAYMENT_OUTBOX_CONF='{
   }
 }'
 
-upsert_connector "$ASGARD_CONNECTOR_NAME" "$ASGARD_CONF"
-upsert_connector "$BOARD_NOTICE_CONNECTOR_NAME" "$BOARD_NOTICE_CONF"
-upsert_connector "$BOARD_FAQ_CONNECTOR_NAME" "$BOARD_FAQ_CONF"
-upsert_connector "$REVIEW_CONNECTOR_NAME" "$REVIEW_CONF"
-upsert_connector "$ORDER_OUTBOX_CONNECTOR_NAME" "$ORDER_OUTBOX_CONF"
+upsert_connector "$ASGARD_CONNECTOR_NAME"         "$ASGARD_CONF"
+upsert_connector "$BOARD_NOTICE_CONNECTOR_NAME"   "$BOARD_NOTICE_CONF"
+upsert_connector "$BOARD_FAQ_CONNECTOR_NAME"      "$BOARD_FAQ_CONF"
+upsert_connector "$REVIEW_CONNECTOR_NAME"         "$REVIEW_CONF"
+upsert_connector "$ORDER_OUTBOX_CONNECTOR_NAME"   "$ORDER_OUTBOX_CONF"
 upsert_connector "$INVENTORY_OUTBOX_CONNECTOR_NAME" "$INVENTORY_OUTBOX_CONF"
 upsert_connector "$PAYMENT_OUTBOX_CONNECTOR_NAME" "$PAYMENT_OUTBOX_CONF"
 
-echo -e "\n\n🔍 현재 등록된 커넥터 목록:"
+echo -e "\n\n🔍 Registered connectors:"
 curl -s http://connect:8086/connectors

@@ -1,0 +1,74 @@
+sequenceDiagram
+    autonumber
+    participant FE  as Frontend (React)
+    participant GW  as gatewayserver
+    participant OS  as orderserver (OrderService)
+    participant PD  as productserver (Feign)
+    participant ODB as order DB (PostgreSQL)
+    participant OOB as order_outbox
+    participant DEB as Debezium CDC
+    participant K   as Kafka
+    participant INV as inventoryserver
+    participant PAY as paymentserver
+    participant SSE as PaymentSseService
+    participant Toss as Toss JS SDK / API
+
+    Note over FE,Toss: [Step 1] Order creation — synchronous HTTP flow
+
+    FE->>GW: POST /orders<br/>Header: X-User-Id: {userId}<br/>Body: { items[{productId, qty, price}] }
+    GW->>OS: X-User-Id header + OrderRequest forwarded
+
+    rect rgb(220, 240, 255)
+        Note over OS,ODB: @Transactional — single atomic transaction
+        OS->>OS: validateOrderRequest() — check items not empty
+
+        OS->>PD: POST /product/checkout/validate (Feign)<br/>{ items[{productId, qty, unitPrice}] }
+        PD-->>OS: CheckoutValidationResponse<br/>{ validatedItems[{productId, serverPrice, valid}] }
+
+        OS->>OS: calculateTotalAmount()<br/>client price vs server price integrity check<br/>IllegalArgumentException on mismatch
+
+        OS->>ODB: save Orders<br/>state = ORDER_CHECKED_OUT
+        OS->>ODB: save OrderHistory per item (snapshot)
+        OS->>OOB: order_outbox INSERT<br/>event_type = OrderCheckedOut<br/>payload = { orderId, userId, items, totalAmount }
+    end
+
+    OS-->>GW: 201 Created  { orderId }
+    GW-->>FE: 201 Created  { orderId }
+
+    Note over FE,Toss: [Step 2] Toss payment widget — frontend client-side
+
+    FE->>Toss: toss.requestPayment("CARD", {<br/>  orderId, amount, orderName,<br/>  successUrl, failUrl<br/>})
+    Note over FE,Toss: User selects payment method and completes authentication in Toss widget
+
+    Toss-->>FE: redirect to successUrl<br/>?paymentKey=...&orderId=...&amount=...
+
+    Note over FE,SSE: [Step 3] Payment confirmation — SSE subscribe then confirm
+
+    FE->>GW: GET /payments/orders/{orderId}/events<br/>(SSE subscription — text/event-stream)
+    GW->>PAY: SSE subscribe request
+    PAY->>SSE: subscribe(orderId)
+    SSE-->>FE: connection established (100ms keepalive heartbeat)
+
+    FE->>GW: POST /payments/confirm<br/>{ paymentKey, orderId, amount }
+    GW->>PAY: confirm processing start<br/>(-> payment-confirm-flow)
+
+    Note over PAY,SSE: After 3-phase Toss processing — SSE + HTTP response simultaneously
+    PAY->>SSE: publishCompleted / publishFailed
+    SSE-->>FE: payment-status event<br/>{ status, approvedAt / failureCode }
+    PAY-->>GW: 200 PaymentResponse / 500 error
+    GW-->>FE: HTTP response (same result as SSE)
+
+    Note over DEB,PAY: [Async parallel flow] Outbox -> Kafka event chain
+
+    rect rgb(245, 245, 245)
+        Note over OOB,PAY: Starts immediately when Debezium CDC detects order_outbox (async)
+        DEB->>OOB: order_outbox INSERT detected (CDC polling)
+        DEB->>K: OrderCheckedOut topic published
+
+        K->>INV: inventoryserver consumes<br/>reserve inventory (RESERVED)
+        INV->>K: PaymentRequested topic published
+
+        K->>PAY: paymentserver consumes<br/>create Payment record (state=READY)<br/>assign idempotencyKey
+    end
+
+    Note over PAY,Toss: Payment(READY) record must exist in paymentserver<br/>before confirm request arrives for Phase 1 DB lookup to succeed

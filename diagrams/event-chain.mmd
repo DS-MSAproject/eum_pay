@@ -1,5 +1,5 @@
 flowchart LR
-    subgraph ORD["orderserver — OrderState 전이"]
+    subgraph ORD["orderserver — OrderState transition"]
         direction TB
         CO["ORDER_CHECKED_OUT"]
         OS_RESOK["INVENTORY_RESERVED"]
@@ -8,25 +8,25 @@ flowchart LR
         OS_PAYFAIL["PAYMENT_FAILED ❌"]
         OS_DONE["ORDER_COMPLETED ✅"]
         OS_DEDFAIL["INVENTORY_DEDUCTION_FAILED ❌"]
-        OS_RELED["INVENTORY_RELEASED\n(보상 완료)"]
+        OS_RELED["INVENTORY_RELEASED\n(compensation done)"]
         OS_RELFAIL["INVENTORY_RELEASE_FAILED ❌"]
     end
 
     subgraph INV["inventoryserver"]
-        IR["InventoryReserved 발행"]
-        IRF["InventoryReservationFailed 발행"]
-        PR["PaymentRequested 발행"]
-        ID["InventoryDeducted 발행"]
-        IDF["InventoryDeductionFailed 발행"]
-        IREL["InventoryReleased 발행"]
-        IRELF["InventoryReleaseFailed 발행"]
+        IR["InventoryReserved published"]
+        IRF["InventoryReservationFailed published"]
+        PR["PaymentRequested published"]
+        ID["InventoryDeducted published"]
+        IDF["InventoryDeductionFailed published"]
+        IREL["InventoryReleased published"]
+        IRELF["InventoryReleaseFailed published"]
     end
 
     subgraph PAY["paymentserver"]
-        PAY_READY["Payment(READY) 생성"]
-        PAY_CONF["결제 승인 ✅\nPaymentCompleted 발행"]
-        PAY_FAIL["결제 실패 ❌\nPaymentFailed 발행"]
-        PAY_CAN["결제 취소\nPaymentCancelled 발행"]
+        PAY_READY["Payment(READY) created"]
+        PAY_CONF["Payment approved ✅\nPaymentCompleted published"]
+        PAY_FAIL["Payment failed ❌\nPaymentFailed published"]
+        PAY_CAN["Payment cancelled\nPaymentCancelled published"]
     end
 
     CO -->|OrderCheckedOut| IR
@@ -36,8 +36,8 @@ flowchart LR
     IRF -->|InventoryReservationFailed| OS_RESFAIL
 
     IR -->|PaymentRequested| PAY_READY
-    PAY_READY -->|"프론트 confirm 호출"| PAY_CONF
-    PAY_READY -.->|"타임아웃 / Toss 오류"| PAY_FAIL
+    PAY_READY -->|"frontend confirm call"| PAY_CONF
+    PAY_READY -.->|"timeout / Toss error"| PAY_FAIL
 
     PAY_CONF -->|PaymentCompleted| OS_PAYOK
     PAY_CONF -->|PaymentCompleted| ID
@@ -50,7 +50,7 @@ flowchart LR
     IREL -->|InventoryReleased| OS_RELED
     IRELF -->|InventoryReleaseFailed| OS_RELFAIL
 
-    PAY_CAN -.->|"PaymentCancelled\n(외부 취소 경로)"| IREL
+    PAY_CAN -.->|"PaymentCancelled\n(external cancel path)"| IREL
 
     style CO fill:#4A90D9,color:#fff
     style PAY_CONF fill:#27AE60,color:#fff
