@@ -68,7 +68,9 @@ public class NoticeService {
         ).map(tuple -> {
             List<NoticeResponse> fixedNotices = tuple.getT1();
             var generalPage = tuple.getT2();
-            long totalElements = fixedNotices.size() + generalPage.getTotalElements();
+            // 페이징 메타는 일반글 기준으로만 계산한다.
+            // 고정 공지는 페이지 수 계산에서 제외하고 화면 상단 노출만 유지한다.
+            long totalElements = generalPage.getTotalElements();
 
             List<NoticeResponse> combinedContent = new ArrayList<>();
             combinedContent.addAll(fixedNotices);
