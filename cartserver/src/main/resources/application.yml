@@ -16,7 +16,7 @@ spring:
     compatibility-verifier:
       enabled: false
     function:
-      definition: orderCheckedOutConsumer
+      definition: orderCheckedOutConsumer;paymentCompletedConsumer;paymentFailedConsumer;orderCancelledConsumer
     stream:
       default:
         contentType: application/json
@@ -24,11 +24,35 @@ spring:
         orderCheckedOutConsumer-in-0:
           destination: OrderCheckedOut
           group: dseum-cart-order-checked-out
+        paymentCompletedConsumer-in-0:
+          destination: PaymentCompleted
+          group: dseum-cart-payment-completed
+        paymentFailedConsumer-in-0:
+          destination: PaymentFailed
+          group: dseum-cart-payment-failed
+        orderCancelledConsumer-in-0:
+          destination: OrderCancelled
+          group: dseum-cart-order-cancelled
       kafka:
         binder:
           brokers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092,kafka2:9092,kafka3:9092}
         bindings:
           orderCheckedOutConsumer-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-partitions: 1
+              auto-commit-on-error: true
+          paymentCompletedConsumer-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-partitions: 1
+              auto-commit-on-error: true
+          paymentFailedConsumer-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-partitions: 1
+              auto-commit-on-error: true
+          orderCancelledConsumer-in-0:
             consumer:
               enable-dlq: true
               dlq-partitions: 1

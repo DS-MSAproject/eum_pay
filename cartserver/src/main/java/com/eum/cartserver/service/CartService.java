@@ -4,6 +4,7 @@ import com.eum.cartserver.domain.Cart;
 import com.eum.cartserver.dto.CartItemDeleteRequest;
 import com.eum.cartserver.dto.CartItemResponse;
 import com.eum.cartserver.dto.CartResponse;
+import com.eum.cartserver.exception.CartItemNotFoundException;
 import com.eum.cartserver.exception.CartNotFoundException;
 import com.eum.cartserver.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
@@ -96,6 +97,33 @@ public class CartService {
                 productOptionPolicyService.normalizeOptionId(request.getOptionId())
         ));
         return buildCartResponse(cartRepository.save(cart));
+    }
+
+    @Transactional
+    public void removeOrderedItems(Long userId, List<CartItemDeleteRequest> requests) {
+        log.info("[removeOrderedItems] 장바구니 항목 삭제 시작. userId={}, itemCount={}", userId, requests.size());
+        Cart cart = getCartByUserId(userId).orElse(null);
+        if (cart == null) {
+            log.warn("[removeOrderedItems] 장바구니 없음 — 삭제 생략. userId={}", userId);
+            return;
+        }
+        int removed = 0;
+        for (CartItemDeleteRequest request : requests) {
+            try {
+                cart.removeItem(
+                        request.getProductId(),
+                        productOptionPolicyService.normalizeOptionId(request.getOptionId())
+                );
+                removed++;
+                log.info("[removeOrderedItems] 항목 삭제. userId={}, productId={}, optionId={}",
+                        userId, request.getProductId(), request.getOptionId());
+            } catch (CartItemNotFoundException e) {
+                log.warn("[removeOrderedItems] 항목 없음 — 건너뜀. userId={}, productId={}, optionId={}",
+                        userId, request.getProductId(), request.getOptionId());
+            }
+        }
+        cartRepository.save(cart);
+        log.info("[removeOrderedItems] 완료. userId={}, 삭제={}/요청={}", userId, removed, requests.size());
     }
 
     private Cart getOrCreateCart(Long userId) {

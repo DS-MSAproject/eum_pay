@@ -76,7 +76,8 @@ public class Orders {
     @PrePersist
     private void generateOrderId() {
         if (this.orderId == null) {
-            this.orderId = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
+            // MAX_SAFE_INTEGER(9007199254740991) 이하로 제한 — JS Number 정밀도 손실 방지
+            this.orderId = (UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE) % 1_000_000_000_000_000L;
         }
     }
 

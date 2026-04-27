@@ -1,14 +1,15 @@
 package com.eum.cartserver.config;
 
-import com.eum.cartserver.dto.CartItemDeleteRequest;
+import com.eum.cartserver.message.OrderCancelledMessage;
 import com.eum.cartserver.message.OrderCheckedOutMessage;
-import com.eum.cartserver.service.CartService;
+import com.eum.cartserver.message.PaymentCompletedMessage;
+import com.eum.cartserver.message.PaymentFailedMessage;
+import com.eum.cartserver.service.CartCheckoutSnapshotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -16,31 +17,55 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class OrderEventConsumerConfig {
 
-    private final CartService cartService;
+    private final CartCheckoutSnapshotService snapshotService;
 
     @Bean
     public Consumer<OrderCheckedOutMessage> orderCheckedOutConsumer() {
         return message -> {
             if (message == null || message.getUserId() == null
                     || message.getItems() == null || message.getItems().isEmpty()) {
-                log.warn("유효하지 않은 OrderCheckedOut 이벤트 수신. eventId={}", message != null ? message.getEventId() : null);
+                log.warn("유효하지 않은 OrderCheckedOut 이벤트. eventId={}", message != null ? message.getEventId() : null);
                 return;
             }
+            log.info("OrderCheckedOut 수신 — 스냅샷 저장. orderId={}, userId={}", message.getOrderId(), message.getUserId());
+            snapshotService.saveSnapshot(message.getOrderId(), message.getUserId(), message.getItems());
+        };
+    }
 
-            log.info("OrderCheckedOut 수신 — 장바구니 항목 제거. orderId={}, userId={}, itemCount={}",
-                    message.getOrderId(), message.getUserId(), message.getItems().size());
-
-            List<CartItemDeleteRequest> requests = message.getItems().stream()
-                    .map(item -> new CartItemDeleteRequest(item.getProductId(), item.getOptionId()))
-                    .toList();
-
-            try {
-                cartService.removeItems(message.getUserId(), requests);
-            } catch (Exception e) {
-                log.error("장바구니 항목 제거 실패. orderId={}, userId={}, error={}",
-                        message.getOrderId(), message.getUserId(), e.getMessage());
-                throw e;
+    @Bean
+    public Consumer<PaymentCompletedMessage> paymentCompletedConsumer() {
+        return message -> {
+            if (message == null || message.getOrderId() == null) {
+                log.warn("[PaymentCompleted] 유효하지 않은 이벤트 수신. eventId={}", message != null ? message.getEventId() : null);
+                return;
             }
+            log.info("[PaymentCompleted] 이벤트 수신. orderId={}, userId={}", message.getOrderId(), message.getUserId());
+            snapshotService.clearCartOnPaymentCompleted(message.getOrderId());
+            log.info("[PaymentCompleted] 처리 완료. orderId={}", message.getOrderId());
+        };
+    }
+
+    @Bean
+    public Consumer<PaymentFailedMessage> paymentFailedConsumer() {
+        return message -> {
+            if (message == null || message.getOrderId() == null) {
+                log.warn("유효하지 않은 PaymentFailed 이벤트. eventId={}", message != null ? message.getEventId() : null);
+                return;
+            }
+            log.info("PaymentFailed 수신 — 스냅샷 삭제 (장바구니 유지). orderId={}", message.getOrderId());
+            snapshotService.clearSnapshotOnly(message.getOrderId(), "PaymentFailed");
+        };
+    }
+
+    @Bean
+    public Consumer<OrderCancelledMessage> orderCancelledConsumer() {
+        return message -> {
+            if (message == null || message.getOrderId() == null) {
+                log.warn("유효하지 않은 OrderCancelled 이벤트. eventId={}", message != null ? message.getEventId() : null);
+                return;
+            }
+            log.info("OrderCancelled 수신 — 스냅샷 삭제 (장바구니 유지). orderId={}", message.getOrderId());
+            snapshotService.clearSnapshotOnly(message.getOrderId(), "OrderCancelled");
         };
     }
 }
