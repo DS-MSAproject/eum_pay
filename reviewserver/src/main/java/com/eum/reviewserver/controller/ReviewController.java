@@ -44,45 +44,41 @@ public class ReviewController {
 
     @GetMapping("/{publicId}")
     public ResponseEntity<ReviewDetailResponse> getReviewDetail(
-            @RequestHeader("Authorization") String authorization,
             @PathVariable UUID publicId,
             @RequestParam(required = false) Boolean isInterested
     ) {
-        return ResponseEntity.ok(reviewService.getReviewDetail(authorization, publicId, isInterested));
+        return ResponseEntity.ok(reviewService.getReviewDetail(publicId, isInterested));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReviewCreateResponse> createReview(
-            @RequestHeader("Authorization") String authorization,
             @RequestHeader("X-User-Id") Long userId,
             @RequestPart("data") String data,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
         return ResponseEntity.ok(
-                reviewService.createReview(authorization, userId, parseAndValidate(data, CreateReviewRequest.class), files)
+                reviewService.createReview(userId, parseAndValidate(data, CreateReviewRequest.class), files)
         );
     }
 
     @PutMapping(value = "/{publicId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReviewUpdateResponse> updateReview(
-            @RequestHeader("Authorization") String authorization,
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable UUID publicId,
             @RequestPart("data") String data,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
         return ResponseEntity.ok(
-                reviewService.updateReview(authorization, userId, publicId, parseAndValidate(data, UpdateReviewRequest.class), files)
+                reviewService.updateReview(userId, publicId, parseAndValidate(data, UpdateReviewRequest.class), files)
         );
     }
 
     @DeleteMapping("/{publicId}")
     public ResponseEntity<ReviewDeleteResponse> deleteReview(
-            @RequestHeader("Authorization") String authorization,
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable UUID publicId
     ) {
-        return ResponseEntity.ok(reviewService.deleteReview(authorization, userId, publicId));
+        return ResponseEntity.ok(reviewService.deleteReview(userId, publicId));
     }
 
     private <T> T parseAndValidate(String rawData, Class<T> type) {

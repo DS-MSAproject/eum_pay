@@ -47,8 +47,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewDetailResponse getReviewDetail(String authorization, UUID publicId, Boolean isInterested) {
-        validateToken(authorization);
+    public ReviewDetailResponse getReviewDetail(UUID publicId, Boolean isInterested) {
         Review review = reviewRepository.findByPublicIdAndDeletedAtIsNull(publicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
 
@@ -63,12 +62,10 @@ public class ReviewService {
 
     @Transactional
     public ReviewCreateResponse createReview(
-            String authorization,
             Long writerId,
             CreateReviewRequest request,
             List<MultipartFile> files
     ) {
-        validateToken(authorization);
         validateUser(writerId);
         if (reviewRepository.existsByProductIdAndWriterId(request.productId(), writerId)) {
             throw new ConflictException("You have already reviewed this product");
@@ -110,13 +107,11 @@ public class ReviewService {
 
     @Transactional
     public ReviewUpdateResponse updateReview(
-            String authorization,
             Long writerId,
             UUID publicId,
             UpdateReviewRequest request,
             List<MultipartFile> files
     ) {
-        validateToken(authorization);
         validateUser(writerId);
         Review review = reviewRepository.findByPublicIdAndDeletedAtIsNull(publicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
@@ -147,8 +142,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewDeleteResponse deleteReview(String authorization, Long writerId, UUID publicId) {
-        validateToken(authorization);
+    public ReviewDeleteResponse deleteReview(Long writerId, UUID publicId) {
         validateUser(writerId);
 
         Review review = reviewRepository.findByPublicIdAndDeletedAtIsNull(publicId)
@@ -158,12 +152,6 @@ public class ReviewService {
 
         review.markDeleted(writerId, DEFAULT_DELETE_REASON);
         return new ReviewDeleteResponse("success", "Review has been deleted.");
-    }
-
-    private void validateToken(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Invalid token");
-        }
     }
 
     private void validateUser(Long writerId) {

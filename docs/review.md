@@ -11,11 +11,6 @@
 
 ## 2) API 상세
 
-## 공통 헤더
-
-- `Authorization: Bearer <access-token>` (필수)
-- `X-User-Id: <number>` (작성/수정/삭제 시 필수)
-
 ### 2.1 리뷰 상세 조회
 
 - Method: `GET`
@@ -150,23 +145,9 @@
 
 ## 3) 에러 응답
 
-에러 공통 포맷:
-
-```json
-{
-  "message": "에러 메시지"
-}
-```
-
 주요 상태코드:
 - `400 Bad Request`: 유효성 실패, 잘못된 multipart/data 형식
 - `401 Unauthorized`: 토큰 형식 오류, `X-User-Id` 누락/오류
 - `404 Not Found`: 리뷰 없음
 - `409 Conflict`: 이미 해당 상품에 리뷰 작성함
 - `413 Payload Too Large`: 파일 용량 초과(50MB 초과)
-
-## 4) 프론트 구현 체크포인트
-
-- 본 문서는 `reviewserver` API만 다룹니다.
-- 상세 응답의 미디어는 `reviewMedias` 배열(`url`, `mediaType`)을 사용합니다.
-- 작성/수정은 반드시 `multipart/form-data` + `data` JSON 문자열 파트로 전송해야 합니다.
