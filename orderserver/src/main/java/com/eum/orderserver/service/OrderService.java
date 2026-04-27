@@ -18,17 +18,20 @@ import com.eum.orderserver.message.payment.PaymentOrderEvent;
 import com.eum.orderserver.outbox.OrderOutboxService;
 import com.eum.orderserver.repository.OrderDetailsRepository;
 import com.eum.orderserver.repository.OrderRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -294,12 +297,21 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<OrderSummaryResponse> listOrders(Long userId, LocalDate startDate, LocalDate endDate,
-                                                 OrderState status, int page) {
+                                                 OrderState status, int page, int size) {
         LocalDateTime start = (startDate == null) ? null : startDate.atStartOfDay();
         LocalDateTime end = (endDate == null) ? null : endDate.atTime(LocalTime.MAX);
-        PageRequest pageable = PageRequest.of(Math.max(0, page), 20, Sort.by(Sort.Direction.DESC, "time"));
+        PageRequest pageable = PageRequest.of(page, Math.max(1, size), Sort.by(Sort.Direction.DESC, "time"));
 
-        return orderRepository.findOrders(userId, start, end, status, pageable)
+        Specification<Orders> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("userId"), userId));
+            if (start != null) predicates.add(cb.greaterThanOrEqualTo(root.get("time"), start));
+            if (end != null)   predicates.add(cb.lessThanOrEqualTo(root.get("time"), end));
+            if (status != null) predicates.add(cb.equal(root.get("orderState"), status));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return orderRepository.findAll(spec, pageable)
                 .map(order -> OrderSummaryResponse.builder()
                         .orderId(order.getOrderId())
                         .userId(order.getUserId())

@@ -87,3 +87,59 @@ Kafka Consumer는 모두 파티셔닝(`partitioned: true`) + DLQ 활성화. Cons
 ### 설정 소스 우선순위
 
 `application.yml` → Vault (`secret/dseum-order`) → Config Server. DB 접속 정보, 시크릿 등 민감 정보는 Vault에서 주입된다. 로컬 개발 시 `VAULT_TOKEN`, `CONFIGSERVER_URI` 환경변수로 오버라이드 가능.
+
+## 트러블슈팅 기록
+
+### [2026-04-27] POST /orders/subject 405 오류
+
+**증상**: 프론트엔드에서 `POST /api/v1/orders/get` 호출 시 405 Method Not Allowed.
+
+**원인**: 주문 생성 엔드포인트가 `@PostMapping("/get")`으로 잘못 명명되어 있었음. 경로에 `/get`이 포함되어 있어 GET 요청으로 혼동 유발.
+
+**수정**: `OrdersController.java` — `@PostMapping("/get")` → `@PostMapping("/subject")`
+
+---
+
+### [2026-04-27] Feign → productserver 401 오류
+
+**증상**: 주문 생성 시 `ProductCheckoutClient`가 `POST /product/checkout/validate`를 호출하면 401 반환.
+
+**원인 및 수정**: productserver 측 문제. `productserver/CLAUDE.md` 트러블슈팅 참고.
+
+---
+
+### [2026-04-27] Debezium OrderCheckedOut 토픽에 byte[5] 수신 — Kafka 메시지 내용 깨짐
+
+**증상**: cartserver `orderCheckedOutConsumer`에서 `ClassCastException: [B cannot be cast to OrderCheckedOutMessage`, `payload=byte[5]` — 5바이트 고정.
+
+**원인**: `OrderOutbox.payload` 컬럼이 `@Lob` + `String` 조합으로 PostgreSQL `oid` (Large Object) 타입으로 매핑됨.
+Debezium은 LOB 내용을 읽지 않고 OID 숫자(예: `16435`)를 문자열로 반환 → 5자리 = 5 bytes.
+
+**수정**:
+1. `OrderOutbox.java` — `@Lob` 제거, `@Column(columnDefinition = "text")` 명시
+2. DB 컬럼 변환 (운영 중 DB에 직접 실행):
+   ```sql
+   ALTER TABLE order_outbox
+     ALTER COLUMN payload TYPE text
+     USING convert_from(lo_get(payload), 'UTF8');
+   ```
+3. orderserver Jib 리빌드 + 재시작
+4. Debezium 커넥터 재시작 (스키마 캐시 갱신)
+
+**주의**: `@Lob`은 PostgreSQL에서 절대 사용 금지. JSON/텍스트 컬럼은 항상 `columnDefinition = "text"` 명시.
+
+---
+
+### [2026-04-27] orderId 정밀도 손실 — PaymentCompleted 스냅샷 조회 실패
+
+**증상**: cartserver에서 `[clearCartOnPaymentCompleted] 스냅샷 없음` 경고. `OrderCheckedOut` 스냅샷은 정상 저장되었으나 `PaymentCompleted` orderId와 불일치.
+
+**원인**: `Orders.generateOrderId()`가 UUID MSB 기반 63비트 양수(최대 9.2×10^18, 19자리)를 생성.
+프론트엔드 JavaScript는 `Number.MAX_SAFE_INTEGER = 9007199254740991`(약 9×10^15) 초과 정수를 `double`로 파싱하면서 정밀도 손실 발생.
+예: `7110054649560582261` → `7110054649560582000` (마지막 3자리 소실)
+`ConfirmPaymentRequest.orderId: Long`으로 받은 paymentserver가 잘린 값을 Payment에 저장 → PaymentCompleted 이벤트에도 잘린 orderId 포함 → 스냅샷 미조회.
+
+**수정**: `Orders.java` — `orderId = (MSB & Long.MAX_VALUE) % 1_000_000_000_000_000L`
+결과값이 15자리 이하(최대 999,999,999,999,999 < MAX_SAFE_INTEGER)로 보장됨.
+
+**주의**: orderId는 항상 JavaScript 안전 정수 범위(2^53-1) 이하로 생성해야 한다. Long 타입 ID를 프론트엔드에 JSON number로 내려줄 경우 반드시 확인할 것.

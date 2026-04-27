@@ -650,6 +650,7 @@ services:
       - SPRING_CLOUD_VAULT_SCHEME=http
       - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
       - SPRING_CLOUD_VAULT_TOKEN=eum-root
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092,kafka2:9092,kafka3:9092
       - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
     volumes:
       - ./cartserver/logs:/app/logs

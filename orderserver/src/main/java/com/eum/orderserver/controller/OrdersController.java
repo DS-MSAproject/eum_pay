@@ -35,7 +35,7 @@ public class OrdersController {
 
     private final OrderService orderService;
 
-    @PostMapping("/get")
+    @PostMapping("/subject")
     public ResponseEntity<?> order(
             @RequestHeader("X-User-Id") Long userId,
             @RequestHeader(value = CorrelationConstants.CORRELATION_HEADER, required = false) String correlationId,
@@ -62,23 +62,48 @@ public class OrdersController {
     @GetMapping
     public ResponseEntity<?> listOrders(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestParam(value = "period", required = false) String period,
             @RequestParam(value = "start_date", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "end_date", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(value = "status", required = false) OrderState status,
-            @RequestParam(value = "page", defaultValue = "0") int page
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
     ) {
-        log.info("사용자 주문 목록 조회 요청: userId={}, startDate={}, endDate={}, status={}, page={}",
-                userId, startDate, endDate, status, page);
+        if (period != null) {
+            startDate = parsePeriodToStartDate(period);
+            endDate = LocalDate.now();
+        }
+        int zeroBasedPage = Math.max(0, page - 1);
+        log.info("주문 목록 조회: userId={}, period={}, startDate={}, endDate={}, status={}, page={}, size={}",
+                userId, period, startDate, endDate, status, page, size);
 
         try {
-            Page<OrderSummaryResponse> response = orderService.listOrders(userId, startDate, endDate, status, page);
+            Page<OrderSummaryResponse> response = orderService.listOrders(userId, startDate, endDate, status, zeroBasedPage, size);
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("주문 목록 조회 파라미터 오류: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             log.error("주문 목록 조회 중 오류 발생: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("주문 목록 조회 실패");
         }
+    }
+
+    private LocalDate parsePeriodToStartDate(String period) {
+        try {
+            if (period.endsWith("m")) {
+                int months = Integer.parseInt(period.substring(0, period.length() - 1));
+                return LocalDate.now().minusMonths(months);
+            }
+            if (period.endsWith("y")) {
+                int years = Integer.parseInt(period.substring(0, period.length() - 1));
+                return LocalDate.now().minusYears(years);
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        throw new IllegalArgumentException("지원하지 않는 기간 형식: " + period + " (예: 1m, 3m, 6m, 1y)");
     }
 
     @DeleteMapping("/{order_id}")

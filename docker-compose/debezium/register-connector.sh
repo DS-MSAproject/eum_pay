@@ -111,14 +111,15 @@ ORDER_OUTBOX_CONF='{
     "database.password": "'$DB_PASSWORD'",
     "database.dbname": "dseum_order",
     "plugin.name": "pgoutput",
-    "topic.prefix":
-    "orderdb",
+    "topic.prefix": "orderdb",
     "table.include.list": "public.order_outbox",
     "slot.name": "order_outbox_slot",
     "publication.name": "order_outbox_publication",
     "publication.autocreate.mode": "filtered",
     "snapshot.mode": "never",
     "tombstones.on.delete": "false",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
     "transforms": "outbox",
     "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
     "transforms.outbox.table.field.event.id": "id",
@@ -126,7 +127,7 @@ ORDER_OUTBOX_CONF='{
     "transforms.outbox.table.field.event.payload": "payload",
     "transforms.outbox.route.by.field": "event_type",
     "transforms.outbox.route.topic.replacement": "${routedByValue}",
-    "transforms.outbox.table.expand.json.payload": "true"
+    "transforms.outbox.table.fields.additional.placement": "event_type:header:eventType,aggregate_type:header:aggregateType"
   }
 }'
 
