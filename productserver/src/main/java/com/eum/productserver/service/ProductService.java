@@ -180,14 +180,14 @@ public class ProductService {
                 .productId(product.getProductId())
                 .productName(product.getProductName())
                 .price(product.getPrice())
-                .options(product.getOptions().stream()
-                        .map(option -> ProductFrontendOptionDto.builder()
-                                .optionId(option.getId())
-                                .optionName(option.getOptionName())
-                                .build())
-                        .toList())
-                .build();
-    }
+                 .options(product.getOptions().stream()
+                         .map(option -> ProductFrontendOptionDto.builder()
+                                 .optionId(option.getId())
+                                 .optionName(option.getOptionName())
+                                 .build())
+                         .toList())
+                 .build();
+     }
 
     private List<ResProductOptionDto> resolveDetailOptions(
             Product product,
