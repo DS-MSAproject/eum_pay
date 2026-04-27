@@ -75,7 +75,6 @@ spring:
               auto-commit-on-error: true
 
 # TODO: Vault .env에 TOSS_SECRET_KEY 추가 후 이 항목 제거
-TOSS_SECRET_KEY: test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6
 
 payment:
   provider: TOSS
