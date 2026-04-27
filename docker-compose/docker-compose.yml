@@ -479,6 +479,12 @@ services:
           - "configserver"
     depends_on:
       - vault
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8071/authserver/default | grep -q 'vault:authserver' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
 
   eurekaserver:
     image: dseum/eurekaserver:0.0.1-SNAPSHOT
@@ -489,7 +495,7 @@ services:
       database:
         condition: service_healthy
       configserver:
-        condition: service_started
+        condition: service_healthy
     networks:
       backend:
         aliases:
@@ -514,7 +520,7 @@ services:
       vault:
         condition: service_started
       configserver:
-        condition: service_started
+        condition: service_healthy
       eurekaserver:
         condition: service_started
     networks:
@@ -531,14 +537,6 @@ services:
       - AUTH_DB_USERNAME=postgres
       - AUTH_DB_PASSWORD=1234
       - AUTH_REDIS_PASSWORD=1234
-      - AUTH_MAIL_USERNAME=${AUTH_MAIL_USERNAME}
-      - AUTH_MAIL_PASSWORD=${AUTH_MAIL_PASSWORD}
-      - AUTH_GOOGLE_CLIENT_ID=${AUTH_GOOGLE_CLIENT_ID}
-      - AUTH_GOOGLE_CLIENT_SECRET=${AUTH_GOOGLE_CLIENT_SECRET}
-      - AUTH_NAVER_CLIENT_ID=${AUTH_NAVER_CLIENT_ID}
-      - AUTH_NAVER_CLIENT_SECRET=${AUTH_NAVER_CLIENT_SECRET}
-      - AUTH_KAKAO_CLIENT_ID=${AUTH_KAKAO_CLIENT_ID}
-      - AUTH_KAKAO_CLIENT_SECRET=${AUTH_KAKAO_CLIENT_SECRET}
       - VAULT_URI=http://dseum-vault:8200
       - VAULT_TOKEN=eum-root
       - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
