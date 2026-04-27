@@ -107,6 +107,34 @@ spring:
                     redis-rate-limiter.requestedTokens: 1
                     key-resolver: "#{@ipKeyResolver}"
 
+            - id: review-query-service
+              uri: lb://DSEUM-SEARCH
+              predicates:
+                - Path=/api/v1/reviews
+                - Method=GET
+              filters:
+                - SetPath=/search/reviews
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: review-header-service
+              uri: lb://DSEUM-SEARCH
+              predicates:
+                - Path=/api/v1/reviews/header
+                - Method=GET
+              filters:
+                - SetPath=/search/reviews/header
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
             - id: review-service
               uri: lb://DSEUM-REVIEW
               predicates:

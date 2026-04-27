@@ -54,6 +54,9 @@ public class ReviewSearchDocument {
     @Field(name = "review_media_url", type = FieldType.Keyword, index = false)
     private String reviewMediaUrl;
 
+    @Field(name = "review_media_urls", type = FieldType.Keyword, index = false)
+    private String reviewMediaUrls;
+
     @Field(name = "media_type", type = FieldType.Keyword)
     private String mediaType;
 

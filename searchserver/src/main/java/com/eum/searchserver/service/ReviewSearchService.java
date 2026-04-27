@@ -9,6 +9,7 @@ import com.eum.searchserver.dto.response.SearchPageResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,8 @@ import reactor.core.publisher.Mono;
 public class ReviewSearchService {
 
     private static final int DEFAULT_SIZE = 5;
+    private static final int MAX_MEDIA_COUNT = 5;
+    private static final String MEDIA_URL_DELIMITER = "\\|";
 
     private final ReactiveElasticsearchOperations operations;
 
@@ -88,18 +91,33 @@ public class ReviewSearchService {
     }
 
     private ReviewSearchResponse mapToResponse(ReviewSearchDocument doc) {
+        List<String> mediaUrls = resolveReviewMediaUrls(doc);
         return ReviewSearchResponse.builder()
                 .reviewId(doc.getId())
                 .productId(doc.getProductId())
                 .writerName(doc.getWriterName())
                 .star(doc.getStar())
                 .likeCount(doc.getLikeCount())
-                .reviewMediaUrl(doc.getReviewMediaUrl())
+                .reviewMediaUrls(mediaUrls)
                 .mediaType(doc.getMediaType())
                 .content(doc.getContent())
                 .createdAt(doc.getCreatedAt())
                 .reviewDetailUrl("/reviews/" + doc.getId())
                 .build();
+    }
+
+    private List<String> resolveReviewMediaUrls(ReviewSearchDocument doc) {
+        if (StringUtils.hasText(doc.getReviewMediaUrls())) {
+            return Arrays.stream(doc.getReviewMediaUrls().split(MEDIA_URL_DELIMITER))
+                    .map(String::trim)
+                    .filter(StringUtils::hasText)
+                    .limit(MAX_MEDIA_COUNT)
+                    .toList();
+        }
+        if (StringUtils.hasText(doc.getReviewMediaUrl())) {
+            return List.of(doc.getReviewMediaUrl());
+        }
+        return List.of();
     }
 
     private String normalizeReviewType(String reviewType) {

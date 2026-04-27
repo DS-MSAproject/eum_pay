@@ -50,31 +50,25 @@ vault kv patch secret/dseum-search  @/vault/data/dseum-search-brand-story.json |
 vault kv put secret/dseum-board     @/vault/data/dseum-board.json     || true
 vault kv put secret/dseum-review    @/vault/data/dseum-review.json    || true
 vault kv put secret/authserver      @/vault/data/dseum-authserver.json || true
+vault kv put secret/dseum-rag       @/vault/data/dseum-rag.json       || true
 
-GEMINI_ENV_PATH="/vault/data/.env"
 GEMINI_KEY_PATH="/vault/data/gemini_key.txt" # 도커 볼륨 마운트 경로 기준
 RAW_KEY=""
 
-if [ -f "$GEMINI_ENV_PATH" ]; then
-    RAW_KEY=$(grep "^GEMINI_API_KEY=" "$GEMINI_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
-fi
-
-if [ -z "$RAW_KEY" ] && [ -f "$GEMINI_KEY_PATH" ]; then
+if [ -f "$GEMINI_KEY_PATH" ]; then
     RAW_KEY=$(cat "$GEMINI_KEY_PATH" | tr -d '\n\r ')
 fi
 
 if [ -n "$RAW_KEY" ]; then
-    echo "==> [보안] 제미나이 API 키를 Vault(secret/dseum-rag)에 저장합니다..."
-
-    # dseum-rag 컨텍스트에 저장 (환경변수/프로퍼티 양쪽 호환)
-    vault kv put secret/dseum-rag \
+    echo "==> [보안] 제미나이 API 키를 Vault(secret/dseum-rag)에 반영합니다..."
+    vault kv patch secret/dseum-rag \
         GEMINI_API_KEY="$RAW_KEY" \
         gemini.api-key="$RAW_KEY" \
         rag.ai.api-key="$RAW_KEY"
 
-    echo "==> [완료] 제미나이 API 키 Vault 저장 성공!"
+    echo "==> [완료] 제미나이 API 키 Vault 반영 성공!"
 else
-    echo "==> [경고] GEMINI_API_KEY 값을 찾을 수 없어 키 저장을 건너뜁니다."
+    echo "==> [경고] /vault/data/gemini_key.txt 값을 찾을 수 없어 GEMINI_API_KEY 반영을 건너뜁니다."
 fi
 
 # vault-init.sh 내부

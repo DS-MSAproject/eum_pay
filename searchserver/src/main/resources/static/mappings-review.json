@@ -19,6 +19,7 @@
     "star": { "type": "integer" },
     "like_count": { "type": "long" },
     "review_media_url": { "type": "keyword", "index": false },
+    "review_media_urls": { "type": "keyword", "index": false },
     "media_type": { "type": "keyword" },
     "preference_score": { "type": "integer" },
     "repurchase_score": { "type": "integer" },
