@@ -138,9 +138,9 @@ spring:
             - id: review-service
               uri: lb://DSEUM-REVIEW
               predicates:
-                - Path=/api/v1/reviews/**
+                - Path=/api/v1/reviews, /api/v1/reviews/**
               filters:
-                - RewritePath=/api/v1/reviews/?(?<segment>.*), /reviews/${segment}
+                - RewritePath=/api/v1/reviews(?<segment>.*), /reviews${segment}
                 - name: RequestRateLimiter
                   args:
                     redis-rate-limiter.replenishRate: 10
