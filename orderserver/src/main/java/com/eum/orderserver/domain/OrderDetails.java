@@ -51,8 +51,8 @@ public class OrderDetails {
     @Column(name = "snapshot_json", nullable = false, columnDefinition = "jsonb")
     private Map<String, Object> snapshotJson = new HashMap<>();
 
-    @ManyToOne(fetch = FetchType.LAZY) // 지연 로딩 권장
-    @JoinColumn(name = "order_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", referencedColumnName = "order_id")
     private Orders orders;
 
     public void refreshSnapshot(Map<String, Object> snapshotJson) {

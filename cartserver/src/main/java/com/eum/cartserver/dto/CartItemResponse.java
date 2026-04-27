@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class CartItemResponse {
     private Long productId;
     private Long optionId;
@@ -13,4 +13,7 @@ public class CartItemResponse {
 
     @JsonProperty("isSelected")
     private boolean selected;
+
+    @JsonProperty("isSoldOut")
+    private boolean soldOut;
 }

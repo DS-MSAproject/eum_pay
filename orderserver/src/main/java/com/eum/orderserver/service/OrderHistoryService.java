@@ -24,7 +24,7 @@ public class OrderHistoryService {
 
     @Transactional
     public void saveValidatedItems(Long orderId, Long userId, List<CheckoutValidationResponse.Item> orderItems) {
-        Orders order = orderRepository.findById(orderId)
+        Orders order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다. ID:" + orderId));
 
         List<OrderDetails> detailsList = orderItems.stream()

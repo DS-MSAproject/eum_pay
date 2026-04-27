@@ -72,8 +72,6 @@ public class Product extends BaseTimeEntity {
     private Integer salesRank; // 💡 검색 서버의 [판매 1~3위] 태그용
     private String keywords;   // 💡 가중치 검색을 위한 키워드
 
-    private Integer initialStock;
-
     // --- 배송 관련 필드 추가 ---
     @Builder.Default
     private Long deliveryFee = 0L;      // 배송비

@@ -1,12 +1,10 @@
 package com.eum.cartserver.service;
 
 import com.eum.cartserver.domain.Cart;
-import com.eum.cartserver.domain.CartItem;
+import com.eum.cartserver.dto.CartItemDeleteRequest;
 import com.eum.cartserver.dto.CartItemResponse;
 import com.eum.cartserver.dto.CartResponse;
-import com.eum.cartserver.exception.CartItemNotFoundException;
 import com.eum.cartserver.exception.CartNotFoundException;
-import com.eum.cartserver.repository.CartItemRepository;
 import com.eum.cartserver.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -25,7 +22,8 @@ import java.util.Optional;
 public class CartService {
 
     private final CartRepository cartRepository;
-    private final CartItemRepository cartItemRepository;
+    private final ProductOptionPolicyService productOptionPolicyService;
+    private final CartStockStatusService cartStockStatusService;
 
     public CartResponse getCart(Long userId) {
         return cartRepository.findByUserId(userId)
@@ -36,48 +34,36 @@ public class CartService {
     @Transactional
     public CartResponse addItem(Long userId, Long productId, Long optionId, Long quantity) {
         Cart cart = getOrCreateCart(userId);
-        LocalDateTime now = LocalDateTime.now();
-        upsertQuantity(cart.getId(), productId, optionId, quantity, true, now);
-
-        return buildCartResponse(cart);
+        Long resolvedOptionId = productOptionPolicyService.resolveOptionIdForAdd(productId, optionId);
+        cart.addItem(productId, resolvedOptionId, quantity);
+        return buildCartResponse(cartRepository.save(cart));
     }
 
     @Transactional
     public CartResponse updateItem(Long userId, Long productId, Long optionId, Long quantity) {
         Cart cart = getCartOrThrow(userId);
-        CartItem item = findItemOrThrow(cart, productId, optionId);
-
-        if (quantity == 0) {
-            cartItemRepository.delete(item);
-            return buildCartResponse(cart);
-        }
-
-        item.updateQuantity(quantity);
-
-        return buildCartResponse(cart);
+        cart.changeQuantity(productId, productOptionPolicyService.normalizeOptionId(optionId), quantity);
+        return buildCartResponse(cartRepository.save(cart));
     }
 
     @Transactional
     public CartResponse updateOption(Long userId, Long productId, Long optionId, Long newOptionId) {
         Cart cart = getCartOrThrow(userId);
-        CartItem item = findItemOrThrow(cart, productId, optionId);
-        if (Objects.equals(item.getOptionId(), newOptionId)) {
-            return buildCartResponse(cart);
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        upsertQuantity(cart.getId(), productId, newOptionId, item.getQuantity(), item.isSelected(), now);
-        cartItemRepository.delete(item);
-
-        return buildCartResponse(cart);
+        Long normalizedCurrentOptionId = productOptionPolicyService.normalizeOptionId(optionId);
+        Long resolvedNewOptionId = productOptionPolicyService.resolveOptionIdForChange(
+                productId,
+                normalizedCurrentOptionId,
+                newOptionId
+        );
+        cart.changeOption(productId, normalizedCurrentOptionId, resolvedNewOptionId);
+        return buildCartResponse(cartRepository.save(cart));
     }
 
     @Transactional
     public CartResponse removeItem(Long userId, Long productId, Long optionId) {
         Cart cart = getCartOrThrow(userId);
-        CartItem item = findItemOrThrow(cart, productId, optionId);
-        cartItemRepository.delete(item);
-        return buildCartResponse(cart);
+        cart.removeItem(productId, productOptionPolicyService.normalizeOptionId(optionId));
+        return buildCartResponse(cartRepository.save(cart));
     }
 
     @Transactional
@@ -87,33 +73,29 @@ public class CartService {
             return buildEmptyCartResponse(userId);
         }
         boolean selected = isSelectedAll == null || isSelectedAll;
-
-        List<CartItem> items = cartItemRepository.findAllByCart_IdOrderByCreatedAtAsc(cart.getId());
-        items.forEach(item -> item.updateSelected(selected));
-        return buildCartResponse(cart);
+        cart.changeAllSelection(selected);
+        return buildCartResponse(cartRepository.save(cart));
     }
 
     @Transactional
     public CartResponse updateItemSelection(Long userId, Long productId, Long optionId, Boolean isSelected) {
         Cart cart = getCartOrThrow(userId);
-        CartItem item = findItemOrThrow(cart, productId, optionId);
         boolean selected = isSelected == null || isSelected;
-        item.updateSelected(selected);
-        return buildCartResponse(cart);
+        cart.changeSelection(productId, productOptionPolicyService.normalizeOptionId(optionId), selected);
+        return buildCartResponse(cartRepository.save(cart));
     }
 
     @Transactional
-    public CartResponse removeSelectedItems(Long userId) {
+    public CartResponse removeItems(Long userId, List<CartItemDeleteRequest> requests) {
         Cart cart = getCartByUserId(userId).orElse(null);
         if (cart == null) {
             return buildEmptyCartResponse(userId);
         }
-        List<CartItem> selectedItems = cartItemRepository.findAllByCart_IdOrderByCreatedAtAsc(cart.getId()).stream()
-                .filter(CartItem::isSelected)
-                .toList();
-
-        cartItemRepository.deleteAll(selectedItems);
-        return buildCartResponse(cart);
+        requests.forEach(request -> cart.removeItem(
+                request.getProductId(),
+                productOptionPolicyService.normalizeOptionId(request.getOptionId())
+        ));
+        return buildCartResponse(cartRepository.save(cart));
     }
 
     private Cart getOrCreateCart(Long userId) {
@@ -135,41 +117,37 @@ public class CartService {
         return cartRepository.findByUserId(userId);
     }
 
-    private CartItem findItemOrThrow(Cart cart, Long productId, Long optionId) {
-        return cartItemRepository.findByBusinessKeyWithLock(cart.getId(), productId, optionId)
-                .orElseThrow(() -> new CartItemNotFoundException("장바구니에 해당 상품이 없습니다."));
-    }
-
-    private void upsertQuantity(Long cartId, Long productId, Long optionId, Long quantity, boolean selected, LocalDateTime now) {
-        if (optionId == null) {
-            cartItemRepository.upsertQuantityWithoutOption(cartId, productId, quantity, selected, now, now);
-            return;
-        }
-
-        cartItemRepository.upsertQuantity(cartId, productId, optionId, quantity, selected, now, now);
-    }
-
     private CartResponse buildEmptyCartResponse(Long userId) {
         return CartResponse.builder()
                 .userId(userId)
+                .selectedItemCount(0)
+                .allSelected(false)
+                .hasSelectedItems(false)
                 .items(List.of())
                 .build();
     }
 
     private CartResponse buildCartResponse(Cart cart) {
-        List<CartItem> items = cartItemRepository.findAllByCart_IdOrderByCreatedAtAsc(cart.getId());
-
-        List<CartItemResponse> itemResponses = items.stream()
+        List<CartItemResponse> itemResponses = cartStockStatusService.enrichSoldOutStatus(cart.getItems().stream()
                 .map(item -> CartItemResponse.builder()
                         .productId(item.getProductId())
                         .optionId(item.getOptionId())
                         .quantity(item.getQuantity())
                         .selected(item.isSelected())
                         .build())
-                .toList();
+                .toList());
+
+        int selectedItemCount = (int) itemResponses.stream()
+                .filter(CartItemResponse::isSelected)
+                .count();
+        boolean hasSelectedItems = selectedItemCount > 0;
+        boolean allSelected = !itemResponses.isEmpty() && selectedItemCount == itemResponses.size();
 
         return CartResponse.builder()
                 .userId(cart.getUserId())
+                .selectedItemCount(selectedItemCount)
+                .allSelected(allSelected)
+                .hasSelectedItems(hasSelectedItems)
                 .items(itemResponses)
                 .build();
     }

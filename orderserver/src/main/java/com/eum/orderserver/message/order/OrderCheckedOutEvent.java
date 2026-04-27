@@ -1,6 +1,5 @@
 package com.eum.orderserver.message.order;
 
-import com.eum.common.correlation.CorrelationIdResolver;
 import com.eum.orderserver.dto.product.CheckoutValidationResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -54,7 +53,7 @@ public class OrderCheckedOutEvent {
                 .eventType("OrderCheckedOut")
                 .orderId(orderId)
                 .userId(userId)
-                .correlationId(CorrelationIdResolver.resolveOrGenerate(null))
+                .correlationId(String.valueOf(orderId))
                 .causationId(eventId)
                 .occurredAt(LocalDateTime.now())
                 .producer("orderserver")

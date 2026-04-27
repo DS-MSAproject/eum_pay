@@ -24,9 +24,6 @@ public class PaymentCancelStatusEvent {
     @JsonAlias({"orderId", "merchant_uid"})
     private Long orderId;
 
-    @JsonAlias({"correlation_id", "correlationId"})
-    private String correlationId;
-
     private Integer cancelAmount;
     private Integer amount;
     private Integer remainingBalance;

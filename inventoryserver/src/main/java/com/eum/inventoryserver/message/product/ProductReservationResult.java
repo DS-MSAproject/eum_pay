@@ -24,7 +24,6 @@ public class ProductReservationResult {
     @JsonProperty("order_id")
     private Long orderId;
 
-    private String correlationId;
     private boolean success;
     private String reason;
     private List<ReservedItem> items;

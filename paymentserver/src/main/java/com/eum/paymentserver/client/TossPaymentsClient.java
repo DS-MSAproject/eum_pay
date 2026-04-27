@@ -52,6 +52,17 @@ public class TossPaymentsClient {
     }
 
     public Mono<TossPaymentResponse> confirm(String idempotencyKey, TossConfirmRequest request) {
+        String authHeader = basicAuthHeader(tossPaymentProperties.getSecretKey());
+        log.info("[TOSS-DEBUG] ===== Toss 승인 요청 =====");
+        log.info("[TOSS-DEBUG] URL            : {}{}", tossPaymentProperties.getBaseUrl(), tossPaymentProperties.getConfirmPath());
+        log.info("[TOSS-DEBUG] Secret-Key     : {}", tossPaymentProperties.getSecretKey());
+        log.info("[TOSS-DEBUG] Authorization  : {}", authHeader);
+        log.info("[TOSS-DEBUG] Idempotency-Key: {}", idempotencyKey);
+        log.info("[TOSS-DEBUG] paymentKey     : {}", request.getPaymentKey());
+        log.info("[TOSS-DEBUG] orderId        : {}", request.getOrderId());
+        log.info("[TOSS-DEBUG] amount         : {}", request.getAmount());
+        log.info("[TOSS-DEBUG] ==========================");
+
         return webClient.post()
                 .uri(tossPaymentProperties.getConfirmPath())
                 .header("Idempotency-Key", idempotencyKey)

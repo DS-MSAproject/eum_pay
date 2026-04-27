@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
@@ -21,8 +22,11 @@ import java.util.List;
 public class Orders {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // 1. 전략 명시 (MariaDB 호환)
-    @Column(name = "order_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    @Column(name = "order_id", unique = true, nullable = false)
     private Long orderId;
 
     @Column(name = "user_id")
@@ -69,8 +73,13 @@ public class Orders {
     @Column(name = "failed_at")
     private LocalDateTime failedAt;
 
-    // == 5. 연관관계 편의 메서드 추가 == //
-    // 이 메서드가 있어야 Orders만 save해도 OrderDetails가 제대로 저장됩니다.
+    @PrePersist
+    private void generateOrderId() {
+        if (this.orderId == null) {
+            this.orderId = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
+        }
+    }
+
     public void addOrderDetail(OrderDetails detail) {
         this.orderDetails.add(detail);
         detail.setOrders(this);

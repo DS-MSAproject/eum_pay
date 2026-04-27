@@ -1,8 +1,5 @@
 package com.eum.paymentserver.service;
 
-import com.eum.common.correlation.Correlated;
-import com.eum.common.correlation.CorrelationIdResolver;
-import com.eum.common.correlation.CorrelationIdSource;
 import com.eum.paymentserver.client.TossPaymentsClient;
 import com.eum.paymentserver.domain.CancelReasonType;
 import com.eum.paymentserver.domain.Payment;
@@ -23,6 +20,7 @@ import com.eum.paymentserver.dto.TossPaymentResponse;
 import com.eum.paymentserver.repository.PaymentAttemptRepository;
 import com.eum.paymentserver.repository.PaymentCancelRepository;
 import com.eum.paymentserver.repository.PaymentRepository;
+import com.eum.paymentserver.exception.ServiceUnavailableException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
@@ -40,7 +38,6 @@ import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
-@Correlated
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -74,16 +71,14 @@ public class PaymentService {
 
     @Transactional
     public PreparePaymentResponse prepare(Long userId, PreparePaymentRequest request) {
-        String correlationId = CorrelationIdResolver.resolveOrGenerate(null);
         Payment payment = paymentRepository.findByOrderId(request.getOrderId())
                 .map(existing -> {
-                    existing.refreshPrepareContext(request.getAmount(), request.getCurrency(), correlationId);
+                    existing.refreshPrepareContext(request.getAmount(), request.getCurrency());
                     return existing;
                 })
                 .orElseGet(() -> Payment.ready(
                         request.getOrderId(),
                         userId,
-                        correlationId,
                         request.getAmount(),
                         request.getCurrency()
                 ));
@@ -102,21 +97,19 @@ public class PaymentService {
     }
 
     @Transactional
-    public void prepareRequestedPayment(@CorrelationIdSource PaymentRequestedMessage message) {
-        String correlationId = CorrelationIdResolver.resolveOrGenerate(message.getCorrelationId());
+    public void prepareRequestedPayment(PaymentRequestedMessage message) {
         Payment payment = paymentRepository.findByOrderId(message.getOrderId())
                 .map(existing -> {
                     if (existing.getStatus() == PaymentState.APPROVED
                             || existing.getStatus() == PaymentState.CANCELED) {
                         return existing;
                     }
-                    existing.refreshPrepareContext(message.getAmount(), "KRW", correlationId);
+                    existing.refreshPrepareContext(message.getAmount(), "KRW");
                     return existing;
                 })
                 .orElseGet(() -> Payment.ready(
                         message.getOrderId(),
                         message.getUserId(),
-                        correlationId,
                         message.getAmount(),
                         "KRW"
                 ));
@@ -129,16 +122,23 @@ public class PaymentService {
      * Phase 2 — Toss 승인 API 호출 (TX 없음)
      * Phase 3 — 결과 기록 + Outbox 적재 (단기 쓰기 TX, 원자적)
      */
-    public PaymentResponse confirm(ConfirmPaymentRequest request) {
+    public PaymentResponse confirm(Long userId, ConfirmPaymentRequest request) {
         // Phase 1: 입력 검증 및 결제 조회
+
+        log.info("PaymentService.confirm={}", request.getPaymentKey());
         Payment payment = Objects.requireNonNull(transactionTemplate.execute(status -> {
             Payment p = paymentRepository.findByOrderId(request.getOrderId())
                     .orElseThrow(() -> new IllegalArgumentException("결제 준비 정보가 존재하지 않습니다."));
             if (!p.getAmount().equals(request.getAmount())) {
                 throw new IllegalArgumentException("결제 승인 금액이 준비 금액과 일치하지 않습니다.");
             }
+            if (!p.getUserId().equals(userId)) {
+                throw new IllegalArgumentException("해당 결제에 대한 권한이 없습니다.");
+            }
             return p;
         }));
+
+        log.info("PaymentService.confirm.getStatus()={}", payment.getStatus());
 
         if (payment.getStatus() == PaymentState.APPROVED
                 && request.getPaymentKey().equals(payment.getPaymentKey())) {
@@ -148,13 +148,16 @@ public class PaymentService {
         // Phase 2: Toss 승인 API 호출 — DB 커넥션 미점유
         TossConfirmRequest tossRequest = TossConfirmRequest.builder()
                 .paymentKey(request.getPaymentKey())
-                .orderId(String.valueOf(request.getOrderId()))
+                .orderId("order-" + request.getOrderId())
                 .amount(request.getAmount())
                 .build();
 
         try {
             TossPaymentResponse tossResponse = tossPaymentsClient
                     .confirm(payment.getIdempotencyKey(), tossRequest).block();
+
+            log.info("PaymentService.confirm.tossResponse()={}", tossResponse.getPaymentKey());
+
 
             // Phase 3: 승인 결과 기록 + Outbox 이벤트 적재 (원자적)
             Payment saved = Objects.requireNonNull(transactionTemplate.execute(status -> {
@@ -172,13 +175,18 @@ public class PaymentService {
                 paymentOutboxService.enqueueCompleted(persisted);
                 return persisted;
             }));
+
+            log.info("PaymentService.confirm.");
+
             paymentSseService.publishCompleted(saved);
             return toResponse(saved);
 
         } catch (CallNotPermittedException ex) {
             log.warn("Toss 결제 승인 차단됨 (CB OPEN): orderId={}", request.getOrderId());
-            throw new IllegalStateException("결제 서비스가 일시적으로 사용 불가합니다. 잠시 후 다시 시도해주세요.");
+            throw new ServiceUnavailableException("결제 서비스가 일시적으로 사용 불가합니다. 잠시 후 다시 시도해주세요.");
         } catch (WebClientResponseException ex) {
+            log.error("Toss 승인 API 오류: orderId={}, status={}, body={}",
+                    request.getOrderId(), ex.getStatusCode(), ex.getResponseBodyAsString());
             // Phase 3: 실패 결과 기록 + Outbox 이벤트 적재 (원자적)
             Payment saved = Objects.requireNonNull(transactionTemplate.execute(status -> {
                 Payment p = paymentRepository.findByOrderId(request.getOrderId()).orElseThrow();
@@ -211,15 +219,19 @@ public class PaymentService {
         }
     }
 
-    public PaymentResponse cancel(String paymentId, CancelPaymentRequest request) {
-        Payment payment = Objects.requireNonNull(transactionTemplate.execute(status ->
-                paymentRepository.findByPaymentId(paymentId)
-                        .orElseThrow(() -> new IllegalArgumentException("결제 정보를 찾을 수 없습니다."))
-        ));
+    public PaymentResponse cancel(Long userId, String paymentId, CancelPaymentRequest request) {
+        Payment payment = Objects.requireNonNull(transactionTemplate.execute(status -> {
+            Payment p = paymentRepository.findByPaymentId(paymentId)
+                    .orElseThrow(() -> new IllegalArgumentException("결제 정보를 찾을 수 없습니다."));
+            if (!p.getUserId().equals(userId)) {
+                throw new IllegalArgumentException("해당 결제에 대한 권한이 없습니다.");
+            }
+            return p;
+        }));
         return cancelApprovedPayment(payment, request);
     }
 
-    public void compensateOrderCancelled(@CorrelationIdSource OrderCancelledMessage message) {
+    public void compensateOrderCancelled(OrderCancelledMessage message) {
         Payment payment = transactionTemplate.execute(status ->
                 paymentRepository.findByOrderId(message.getOrderId()).orElse(null)
         );
@@ -271,7 +283,7 @@ public class PaymentService {
 
         } catch (CallNotPermittedException ex) {
             log.warn("Toss 결제 취소 차단됨 (CB OPEN): paymentId={}", payment.getPaymentId());
-            throw new IllegalStateException("결제 취소 서비스가 일시적으로 사용 불가합니다. 잠시 후 다시 시도해주세요.");
+            throw new ServiceUnavailableException("결제 취소 서비스가 일시적으로 사용 불가합니다. 잠시 후 다시 시도해주세요.");
         } catch (WebClientResponseException ex) {
             transactionTemplate.execute(status -> {
                 Payment p = paymentRepository.findByPaymentId(payment.getPaymentId()).orElseThrow();

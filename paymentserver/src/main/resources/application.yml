@@ -74,6 +74,8 @@ spring:
               dlq-partitions: 1
               auto-commit-on-error: true
 
+# TODO: Vault .env에 TOSS_SECRET_KEY 추가 후 이 항목 제거
+
 payment:
   provider: TOSS
   toss:

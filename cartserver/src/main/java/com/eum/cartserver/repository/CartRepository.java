@@ -12,7 +12,7 @@ import java.util.Optional;
 public interface CartRepository extends JpaRepository<Cart, Long> {
     Optional<Cart> findByUserId(Long userId);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query(value = """
             INSERT INTO cart (user_id, created_at, updated_at)
             VALUES (:userId, :createdAt, :updatedAt)
