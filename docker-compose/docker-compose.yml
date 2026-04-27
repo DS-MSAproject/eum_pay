@@ -511,6 +511,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      vault:
+        condition: service_started
       configserver:
         condition: service_started
       eurekaserver:
@@ -525,6 +527,20 @@ services:
       - SPRING_PROFILES_ACTIVE=default
       - SPRING_CONFIG_IMPORT=optional:configserver:http://configserver:8071
       - SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED=false
+      - AUTH_DB_URL=jdbc:postgresql://database:5432/dseum
+      - AUTH_DB_USERNAME=postgres
+      - AUTH_DB_PASSWORD=1234
+      - AUTH_REDIS_PASSWORD=1234
+      - AUTH_MAIL_USERNAME=${AUTH_MAIL_USERNAME}
+      - AUTH_MAIL_PASSWORD=${AUTH_MAIL_PASSWORD}
+      - AUTH_GOOGLE_CLIENT_ID=${AUTH_GOOGLE_CLIENT_ID}
+      - AUTH_GOOGLE_CLIENT_SECRET=${AUTH_GOOGLE_CLIENT_SECRET}
+      - AUTH_NAVER_CLIENT_ID=${AUTH_NAVER_CLIENT_ID}
+      - AUTH_NAVER_CLIENT_SECRET=${AUTH_NAVER_CLIENT_SECRET}
+      - AUTH_KAKAO_CLIENT_ID=${AUTH_KAKAO_CLIENT_ID}
+      - AUTH_KAKAO_CLIENT_SECRET=${AUTH_KAKAO_CLIENT_SECRET}
+      - VAULT_URI=http://dseum-vault:8200
+      - VAULT_TOKEN=eum-root
       - JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m
     healthcheck:
       # JWKS보다 가벼운 헬스 엔드포인트로 초기 기동 상태를 판별
