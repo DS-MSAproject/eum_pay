@@ -9,5 +9,8 @@ import java.util.List;
 @Builder
 public class CartResponse {
     private Long userId;
+    private int selectedItemCount;
+    private boolean allSelected;
+    private boolean hasSelectedItems;
     private List<CartItemResponse> items;
 }

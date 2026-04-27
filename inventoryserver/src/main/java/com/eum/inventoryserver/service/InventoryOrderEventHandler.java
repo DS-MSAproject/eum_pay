@@ -1,7 +1,5 @@
 package com.eum.inventoryserver.service;
 
-import com.eum.common.correlation.Correlated;
-import com.eum.common.correlation.CorrelationIdSource;
 import com.eum.inventoryserver.idempotency.InventoryProcessedEvent;
 import com.eum.inventoryserver.message.inventory.InventoryDeductionResult;
 import com.eum.inventoryserver.message.inventory.InventoryReleaseResult;
@@ -27,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@Correlated
 public class InventoryOrderEventHandler {
 
     private static final String PAYMENT_COMPLETED_STATUS = "PAYCOMPLETE";
@@ -38,7 +35,7 @@ public class InventoryOrderEventHandler {
     private final InventoryProcessedEventRepository processedEventRepository;
 
     @Transactional
-    public void handleOrderCheckedOut(@CorrelationIdSource OrderCheckedOutEvent event) {
+    public void handleOrderCheckedOut(OrderCheckedOutEvent event) {
         String eventId = event.processedEventId();
         if (processedEventRepository.existsByEventId(eventId)) {
             log.info("중복 주문 재고 예약 이벤트 무시: {}", eventId);
@@ -56,7 +53,7 @@ public class InventoryOrderEventHandler {
     }
 
     @Transactional
-    public void handlePaymentCompletedTopic(@CorrelationIdSource PaymentStatusEvent event) {
+    public void handlePaymentCompletedTopic(PaymentStatusEvent event) {
         event.setPaymentStatus(PAYMENT_COMPLETED_STATUS);
         String eventId = canonicalPaymentEventId(event.getOrderId(), PAYMENT_COMPLETED_STATUS);
         if (processedEventRepository.existsByEventId(eventId)) {
@@ -64,16 +61,13 @@ public class InventoryOrderEventHandler {
             return;
         }
 
-        InventoryDeductionResult result = inventoryService.tryConfirmReservedStock(
-                event.getOrderId(),
-                event.getCorrelationId()
-        );
+        InventoryDeductionResult result = inventoryService.tryConfirmReservedStock(event.getOrderId());
         inventoryOutboxService.enqueueDeductionResult(result);
         markProcessed(eventId, "PAYMENT_COMPLETED");
     }
 
     @Transactional
-    public void handlePaymentFailedTopic(@CorrelationIdSource PaymentStatusEvent event) {
+    public void handlePaymentFailedTopic(PaymentStatusEvent event) {
         event.setPaymentStatus(PAYMENT_FAILED_STATUS);
         String eventId = canonicalPaymentEventId(event.getOrderId(), PAYMENT_FAILED_STATUS);
         if (processedEventRepository.existsByEventId(eventId)) {
@@ -81,14 +75,9 @@ public class InventoryOrderEventHandler {
             return;
         }
 
-        ProductRestoreResult result = inventoryService.releaseReservedStock(
-                event.getOrderId(),
-                "PAYMENT_FAILED",
-                event.getCorrelationId()
-        );
+        ProductRestoreResult result = inventoryService.releaseReservedStock(event.getOrderId(), "PAYMENT_FAILED");
         inventoryOutboxService.enqueueReleaseResult(InventoryReleaseResult.builder()
                 .orderId(result.getOrderId())
-                .correlationId(result.getCorrelationId())
                 .success(result.isSuccess())
                 .reason(result.getReason())
                 .build());
@@ -96,7 +85,7 @@ public class InventoryOrderEventHandler {
     }
 
     @Transactional
-    public void handlePaymentCancelStatus(@CorrelationIdSource PaymentCancelStatusEvent event) {
+    public void handlePaymentCancelStatus(PaymentCancelStatusEvent event) {
         String eventId = event.processedEventId();
         if (processedEventRepository.existsByEventId(eventId)) {
             log.info("중복 결제 취소 상태 이벤트 무시: {}", eventId);
@@ -110,14 +99,9 @@ public class InventoryOrderEventHandler {
             return;
         }
 
-        ProductRestoreResult result = inventoryService.releaseReservedStock(
-                event.getOrderId(),
-                "PAYMENT_CANCELLED",
-                event.getCorrelationId()
-        );
+        ProductRestoreResult result = inventoryService.releaseReservedStock(event.getOrderId(), "PAYMENT_CANCELLED");
         inventoryOutboxService.enqueueReleaseResult(InventoryReleaseResult.builder()
                 .orderId(result.getOrderId())
-                .correlationId(result.getCorrelationId())
                 .success(result.isSuccess())
                 .reason(result.getReason())
                 .build());

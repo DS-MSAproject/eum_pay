@@ -41,9 +41,6 @@ public class Payment {
     @Column(nullable = false)
     private Long userId;
 
-    @Column(length = 64)
-    private String correlationId;
-
     @Column(unique = true)
     private String paymentKey;  // toss 승인후 받은 key
 
@@ -82,7 +79,7 @@ public class Payment {
     private String failureMessage; // 결제 실패 원인
 
     @Version
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")
     private Long version = 0L;          // 낙관적 락 — 동시 confirm 요청으로 인한 Lost Update 방지
 
     @Column(nullable = false)
@@ -96,7 +93,6 @@ public class Payment {
             String paymentId,
             Long orderId,
             Long userId,
-            String correlationId,
             PaymentProvider provider,
             Long amount,
             String currency,
@@ -106,7 +102,6 @@ public class Payment {
         this.paymentId = paymentId;
         this.orderId = orderId;
         this.userId = userId;
-        this.correlationId = correlationId;
         this.provider = provider;
         this.amount = amount;
         this.currency = currency;
@@ -118,7 +113,6 @@ public class Payment {
     public static Payment ready(
             Long orderId,
             Long userId,
-            String correlationId,
             Long amount,
             String currency
     ) {
@@ -126,7 +120,6 @@ public class Payment {
                 .paymentId("pay_" + UUID.randomUUID().toString().replace("-", ""))
                 .orderId(orderId)
                 .userId(userId)
-                .correlationId(correlationId)
                 .provider(PaymentProvider.TOSS)
                 .amount(amount)
                 .currency(currency == null || currency.isBlank() ? "KRW" : currency)
@@ -135,12 +128,9 @@ public class Payment {
                 .build();
     }
 
-    public void refreshPrepareContext(Long amount, String currency, String correlationId) {
+    public void refreshPrepareContext(Long amount, String currency) {
         this.amount = amount;
         this.currency = currency;
-        if (correlationId != null && !correlationId.isBlank()) {
-            this.correlationId = correlationId;
-        }
         if (this.status == PaymentState.FAILED || this.status == PaymentState.CANCEL_FAILED) {
             this.status = PaymentState.READY;
             this.failureCode = null;
@@ -191,6 +181,9 @@ public class Payment {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.version == null) {
+            this.version = 0L;
+        }
     }
 
     @PreUpdate

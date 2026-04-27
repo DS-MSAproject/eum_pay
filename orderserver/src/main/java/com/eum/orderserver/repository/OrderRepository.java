@@ -9,8 +9,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Orders, Long> {
+
+    Optional<Orders> findByOrderId(Long orderId);
 
     @Query("""
             select o from Orders o

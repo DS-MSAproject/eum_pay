@@ -79,7 +79,7 @@ public class OrderService {
 
     @Transactional
     public void handleInventoryReserved(InventoryReservationEvent event) {
-        Orders order = orderRepository.findById(event.getOrderId())
+        Orders order = orderRepository.findByOrderId(event.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + event.getOrderId()));
 
         if (order.getOrderState() != OrderState.ORDER_CHECKED_OUT) {
@@ -93,7 +93,7 @@ public class OrderService {
 
     @Transactional
     public void handleInventoryReservationFailed(InventoryReservationEvent event) {
-        Orders order = orderRepository.findById(event.getOrderId())
+        Orders order = orderRepository.findByOrderId(event.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + event.getOrderId()));
 
         if (order.getOrderState() != OrderState.ORDER_CHECKED_OUT) {
@@ -110,7 +110,7 @@ public class OrderService {
         Long orderId = event.getOrderId();
         log.info("{}번 주문 결제 완료 이벤트 처리 시도", orderId);
 
-        Orders order = orderRepository.findById(orderId)
+        Orders order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + orderId));
 
         if (order.getOrderState() != OrderState.INVENTORY_RESERVED) {
@@ -129,7 +129,7 @@ public class OrderService {
         Long orderId = event.getOrderId();
         log.info("{}번 주문 결제 실패 이벤트 처리 시도", orderId);
 
-        Orders order = orderRepository.findById(orderId)
+        Orders order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + orderId));
 
         if (order.getOrderState() == OrderState.INVENTORY_RELEASED
@@ -157,7 +157,7 @@ public class OrderService {
 
     @Transactional
     public void handleInventoryDeducted(InventoryDeductionEvent event) {
-        Orders order = orderRepository.findById(event.getOrderId())
+        Orders order = orderRepository.findByOrderId(event.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + event.getOrderId()));
 
         if (order.getOrderState() == OrderState.ORDER_COMPLETED) {
@@ -177,7 +177,7 @@ public class OrderService {
 
     @Transactional
     public void handleInventoryDeductionFailed(InventoryDeductionEvent event) {
-        Orders order = orderRepository.findById(event.getOrderId())
+        Orders order = orderRepository.findByOrderId(event.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + event.getOrderId()));
 
         if (order.getOrderState() != OrderState.PAYMENT_COMPLETED) {
@@ -191,7 +191,7 @@ public class OrderService {
 
     @Transactional
     public void handleInventoryReleased(InventoryReleaseEvent event) {
-        Orders order = orderRepository.findById(event.getOrderId())
+        Orders order = orderRepository.findByOrderId(event.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + event.getOrderId()));
 
         if (order.getOrderState() == OrderState.INVENTORY_RELEASED) {
@@ -211,7 +211,7 @@ public class OrderService {
 
     @Transactional
     public void handleInventoryReleaseFailed(InventoryReleaseEvent event) {
-        Orders order = orderRepository.findById(event.getOrderId())
+        Orders order = orderRepository.findByOrderId(event.getOrderId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + event.getOrderId()));
 
         if (order.getOrderState() != OrderState.PAYMENT_FAILED
@@ -226,7 +226,7 @@ public class OrderService {
 
     @Transactional
     public void requestCancel(Long orderId, String reason) {
-        Orders order = orderRepository.findById(orderId)
+        Orders order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + orderId));
 
         if (order.getOrderState() != OrderState.ORDER_COMPLETED
@@ -242,7 +242,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Orders selectOrder(Long orderId) {
-        return orderRepository.findById(orderId)
+        return orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + orderId));
     }
 

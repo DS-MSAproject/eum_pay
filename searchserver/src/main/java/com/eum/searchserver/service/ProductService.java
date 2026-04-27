@@ -130,7 +130,7 @@ public class ProductService {
                     if (hasText(searchKeyword)) {
                         String cleanTitle = searchKeyword.trim();
                         try {
-                            var logData = Map.of(
+                            var logData = java.util.Map.of(
                                     "event_type", "TITLE_SEARCH_ACTION",
                                     "search_title", cleanTitle,
                                     "result_count", total,
@@ -653,7 +653,7 @@ public class ProductService {
     }
 
     private List<String> buildSimilarTags(ProductDocument doc) {
-        List<String> tags = new ArrayList<>();
+        List<String> tags = new java.util.ArrayList<>();
 
         // 우선순위: NEW > 판매 1/2/3위
         if (isNewProduct(doc)) {

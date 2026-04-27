@@ -13,7 +13,7 @@ import reactor.core.publisher.Sinks;
 @Service
 public class PaymentSseService {
 
-    private static final Duration HEARTBEAT_INTERVAL = Duration.ofMillis(100);
+    private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(15);
 
     private final Map<Long, Sinks.Many<PaymentStatusSseEvent>> orderChannels = new ConcurrentHashMap<>();
 
@@ -27,16 +27,18 @@ public class PaymentSseService {
                         .data(event)
                         .build());
 
+        // sink가 complete되면 heartbeat도 함께 종료
         Flux<ServerSentEvent<PaymentStatusSseEvent>> heartbeat = Flux.interval(HEARTBEAT_INTERVAL)
                 .map(sequence -> ServerSentEvent.<PaymentStatusSseEvent>builder()
                         .comment("keepalive")
-                        .build());
+                        .build())
+                .takeUntilOther(sink.asFlux().then());
 
         return Flux.merge(updates, heartbeat);
     }
 
     public void publishCompleted(Payment payment) {
-        emit(payment.getOrderId(), PaymentStatusSseEvent.builder()
+        emitFinal(payment.getOrderId(), PaymentStatusSseEvent.builder()
                 .orderId(payment.getOrderId())
                 .paymentId(payment.getPaymentId())
                 .status(payment.getStatus().name())
@@ -46,7 +48,7 @@ public class PaymentSseService {
     }
 
     public void publishFailed(Payment payment) {
-        emit(payment.getOrderId(), PaymentStatusSseEvent.builder()
+        emitFinal(payment.getOrderId(), PaymentStatusSseEvent.builder()
                 .orderId(payment.getOrderId())
                 .paymentId(payment.getPaymentId())
                 .status(payment.getStatus().name())
@@ -57,9 +59,12 @@ public class PaymentSseService {
                 .build());
     }
 
-    private void emit(Long orderId, PaymentStatusSseEvent event) {
+    // 최종 이벤트 전송 후 스트림 종료 및 메모리 해제
+    private void emitFinal(Long orderId, PaymentStatusSseEvent event) {
         Sinks.Many<PaymentStatusSseEvent> sink = getOrCreateSink(orderId);
         sink.emitNext(event, Sinks.EmitFailureHandler.FAIL_FAST);
+        sink.emitComplete(Sinks.EmitFailureHandler.FAIL_FAST);
+        orderChannels.remove(orderId);
     }
 
     private Sinks.Many<PaymentStatusSseEvent> getOrCreateSink(Long orderId) {

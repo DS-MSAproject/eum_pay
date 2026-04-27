@@ -32,6 +32,12 @@ public class GlobalExceptionHandler {
         return baseBody(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
+    @ExceptionHandler(ServiceUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Map<String, Object> handleServiceUnavailable(ServiceUnavailableException exception) {
+        return baseBody(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage());
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public Map<String, Object> handleIllegalState(IllegalStateException exception) {

@@ -47,17 +47,21 @@ public class PaymentController {
     }
 
     @PostMapping("/confirm")
-    public Mono<PaymentResponse> confirm(@Valid @RequestBody ConfirmPaymentRequest request) {
-        return Mono.fromCallable(() -> paymentService.confirm(request))
+    public Mono<PaymentResponse> confirm(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody ConfirmPaymentRequest request
+    ) {
+        return Mono.fromCallable(() -> paymentService.confirm(userId, request))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
     @PostMapping("/{paymentId}/cancel")
     public Mono<PaymentResponse> cancel(
+            @RequestHeader("X-User-Id") Long userId,
             @PathVariable String paymentId,
             @Valid @RequestBody CancelPaymentRequest request
     ) {
-        return Mono.fromCallable(() -> paymentService.cancel(paymentId, request))
+        return Mono.fromCallable(() -> paymentService.cancel(userId, paymentId, request))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 

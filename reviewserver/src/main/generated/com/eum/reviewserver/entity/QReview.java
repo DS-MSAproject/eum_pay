@@ -42,8 +42,6 @@ public class QReview extends EntityPathBase<Review> {
 
     public final NumberPath<Long> productId = createNumber("productId", Long.class);
 
-    public final ComparablePath<java.util.UUID> publicId = createComparable("publicId", java.util.UUID.class);
-
     public final NumberPath<Integer> repurchaseScore = createNumber("repurchaseScore", Integer.class);
 
     public final ListPath<ReviewMediaPayload, SimplePath<ReviewMediaPayload>> reviewMediaJson = this.<ReviewMediaPayload, SimplePath<ReviewMediaPayload>>createList("reviewMediaJson", ReviewMediaPayload.class, SimplePath.class, PathInits.DIRECT2);

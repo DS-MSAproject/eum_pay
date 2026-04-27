@@ -4,9 +4,12 @@ import com.eum.productserver.dto.request.item.save.ImageFileSaveDto;
 import com.eum.s3.S3Component;
 import com.eum.s3.S3Directory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -24,6 +27,12 @@ public class ProductImageUploadService {
     );
 
     private final S3Component s3Component;
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucket;
+
+    @Value("${cloud.aws.region.static}")
+    private String region;
 
     /**
      * multipart로 받은 상품 이미지를 S3에 업로드하고, DB에 저장할 URL/Key DTO로 변환합니다.
@@ -75,7 +84,14 @@ public class ProductImageUploadService {
         String imageKey = s3Component.upload(file, S3Directory.PRODUCT);
         ImageFileSaveDto image = new ImageFileSaveDto();
         image.setImageKey(imageKey);
-        image.setImageUrl(s3Component.toPublicUrl(imageKey));
+        image.setImageUrl(buildS3Url(imageKey));
         return image;
+    }
+
+    private String buildS3Url(String imageKey) {
+        String encodedKey = URLEncoder.encode(imageKey, StandardCharsets.UTF_8)
+                .replace("+", "%20")
+                .replace("%2F", "/");
+        return "https://%s.s3.%s.amazonaws.com/%s".formatted(bucket, region, encodedKey);
     }
 }
