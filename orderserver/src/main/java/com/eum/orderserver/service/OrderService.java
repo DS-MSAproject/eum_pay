@@ -290,10 +290,10 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<OrderSummaryResponse> listOrders(Long userId, LocalDate startDate, LocalDate endDate,
-                                                 OrderState status, int page) {
+                                                 OrderState status, int page, int size) {
         LocalDateTime start = (startDate == null) ? null : startDate.atStartOfDay();
         LocalDateTime end = (endDate == null) ? null : endDate.atTime(LocalTime.MAX);
-        PageRequest pageable = PageRequest.of(Math.max(0, page), 20, Sort.by(Sort.Direction.DESC, "time"));
+        PageRequest pageable = PageRequest.of(page, Math.max(1, size), Sort.by(Sort.Direction.DESC, "time"));
 
         return orderRepository.findOrders(userId, start, end, status, pageable)
                 .map(order -> OrderSummaryResponse.builder()
