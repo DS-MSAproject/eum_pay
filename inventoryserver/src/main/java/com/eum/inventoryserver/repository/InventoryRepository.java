@@ -2,7 +2,6 @@ package com.eum.inventoryserver.repository;
 
 import com.eum.inventoryserver.entity.Inventory;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -32,9 +31,4 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     // 이 메서드는 그대로 두셔도 됩니다. (Service에서 합산 로직 처리)
     List<Inventory> findAllByProductIdIn(List<Long> productIds);
 
-    long deleteByProductId(Long productId);
-
-    @Modifying
-    @Query("delete from Inventory i where i.productId not in :productIds")
-    long deleteByProductIdNotIn(@Param("productIds") List<Long> productIds);
 }

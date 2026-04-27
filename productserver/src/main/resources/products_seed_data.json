@@ -480,11 +480,11 @@
   },
   {
     "categoryName": "오독오독",
-    "productName": "오독오독 바삭 10종 골라담기",
-    "content": "오독오독 바삭 10종 중 원하는 맛을 골라 담을 수 있는 상품입니다.",
-    "slug": "odok-crispy-10-picks",
-    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독 바삭 10종 골라담기_1.jpg",
-    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_10종",
+    "productName": "오독오독 바삭 7종 골라담기",
+    "content": "오독오독 바삭 7종 중 원하는 맛을 골라 담을 수 있는 상품입니다.",
+    "slug": "odok-crispy-7-picks",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독 바삭 7종 골라담기_1.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_7종",
     "brandName": "오독오독",
     "tags": "강아지간식,오독오독",
     "price": 15900,
@@ -516,18 +516,6 @@
       {
         "optionName": "바삭 캥거루",
         "extraPrice": 5000
-      },
-      {
-        "optionName": "바삭 미니 비프 60g",
-        "extraPrice": 0
-      },
-      {
-        "optionName": "바삭 미니 치킨 비트 60g",
-        "extraPrice": -6100
-      },
-      {
-        "optionName": "바삭 미니 황태 60g",
-        "extraPrice": 0
       }
     ]
   },
