@@ -30,7 +30,7 @@ public class Cart extends BaseTimeEntity {
     @Column(name = "cart_id")
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, unique = true)
     private Long userId;
 
     @Version

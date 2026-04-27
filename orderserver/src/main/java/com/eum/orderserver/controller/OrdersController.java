@@ -34,7 +34,7 @@ public class OrdersController {
 
     private final OrderService orderService;
 
-    @PostMapping("/get")
+    @PostMapping("/subject")
     public ResponseEntity<?> order(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody OrderRequest orderRequest) {

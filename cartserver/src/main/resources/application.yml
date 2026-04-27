@@ -15,6 +15,24 @@ spring:
   cloud:
     compatibility-verifier:
       enabled: false
+    function:
+      definition: orderCheckedOutConsumer
+    stream:
+      default:
+        contentType: application/json
+      bindings:
+        orderCheckedOutConsumer-in-0:
+          destination: OrderCheckedOut
+          group: dseum-cart-order-checked-out
+      kafka:
+        binder:
+          brokers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092,kafka2:9092,kafka3:9092}
+        bindings:
+          orderCheckedOutConsumer-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-partitions: 1
+              auto-commit-on-error: true
     vault:
       host: ${VAULT_HOST:dseum-vault}
       port: ${VAULT_PORT:8200}

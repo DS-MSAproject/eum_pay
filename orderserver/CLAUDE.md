@@ -87,3 +87,21 @@ Kafka Consumer는 모두 파티셔닝(`partitioned: true`) + DLQ 활성화. Cons
 ### 설정 소스 우선순위
 
 `application.yml` → Vault (`secret/dseum-order`) → Config Server. DB 접속 정보, 시크릿 등 민감 정보는 Vault에서 주입된다. 로컬 개발 시 `VAULT_TOKEN`, `CONFIGSERVER_URI` 환경변수로 오버라이드 가능.
+
+## 트러블슈팅 기록
+
+### [2026-04-27] POST /orders/subject 405 오류
+
+**증상**: 프론트엔드에서 `POST /api/v1/orders/get` 호출 시 405 Method Not Allowed.
+
+**원인**: 주문 생성 엔드포인트가 `@PostMapping("/get")`으로 잘못 명명되어 있었음. 경로에 `/get`이 포함되어 있어 GET 요청으로 혼동 유발.
+
+**수정**: `OrdersController.java` — `@PostMapping("/get")` → `@PostMapping("/subject")`
+
+---
+
+### [2026-04-27] Feign → productserver 401 오류
+
+**증상**: 주문 생성 시 `ProductCheckoutClient`가 `POST /product/checkout/validate`를 호출하면 401 반환.
+
+**원인 및 수정**: productserver 측 문제. `productserver/CLAUDE.md` 트러블슈팅 참고.

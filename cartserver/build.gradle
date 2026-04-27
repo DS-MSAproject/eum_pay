@@ -36,9 +36,8 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-    // Template leftovers. Re-enable when cart events are actually published/consumed.
-    // implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
-    // implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
