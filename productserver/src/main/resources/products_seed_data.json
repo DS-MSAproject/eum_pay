@@ -1,0 +1,605 @@
+[
+  {
+    "categoryName": "Bakery",
+    "productName": "어글어글 동물복지 연어마들렌",
+    "content": "동물복지 원료와 연어를 담아 부드럽게 구운 마들렌 간식입니다.",
+    "slug": "ugle-salmon-madeleine",
+    "imagePath": "seed/product-images/bakery/어글어글_동물복지_연어마들렌.png",
+    "detailImageDirectory": "seed/product-images/bakery/어글어글_동물복지_연어마들렌",
+    "brandName": "어글어글",
+    "tags": "강아지간식,베이커리,연어",
+    "price": 3500
+  },
+  {
+    "categoryName": "Bakery",
+    "productName": "어글어글 베이커리 뼈간식 7종",
+    "content": "다양한 맛과 모양으로 즐길 수 있는 수제 뼈간식 7종 구성입니다.",
+    "slug": "ugle-bakery-bone-7",
+    "imagePath": "seed/product-images/bakery/어글어글_베이커리_뼈간식_7종_골라담기.jpg",
+    "detailImageDirectory": "seed/product-images/bakery/어글어글_베이커리_수제뼈간식",
+    "brandName": "어글어글",
+    "tags": "강아지간식,베이커리,뼈간식",
+    "price": 3500,
+    "options": [
+      {
+        "optionName": "연어 마들렌"
+      },
+      {
+        "optionName": "비지 에그 타르트",
+        "extraPrice": 1500
+      },
+      {
+        "optionName": "제주 치킨 스윗 치즈번",
+        "extraPrice": 1500
+      },
+      {
+        "optionName": "제주 통닭발 6개입",
+        "extraPrice": 3000
+      },
+      {
+        "optionName": "전라도 나주 유황오리 도가니뼈 80g",
+        "extraPrice": 3000
+      },
+      {
+        "optionName": "메추리 통구이",
+        "extraPrice": 5000
+      },
+      {
+        "optionName": "강원도 대관령 무염 황태채 40g",
+        "extraPrice": 8500
+      }
+    ]
+  },
+  {
+    "categoryName": "Bakery",
+    "productName": "어글어글 아이스크림 케이크 300g 4종",
+    "content": "특별한 날을 위한 반려견용 아이스크림 케이크입니다.",
+    "slug": "ugle-icecream-cake",
+    "imagePath": "seed/product-images/bakery/어글어글_아이스크림_케이크_1.png",
+    "detailImageDirectory": "seed/product-images/bakery/어글어글_아이스크림케이크",
+    "brandName": "어글어글",
+    "tags": "강아지간식,케이크,베이커리",
+    "price": 24000,
+    "options": [
+      {
+        "optionName": "동물복지 유정란 당근 케이크 300g"
+      },
+      {
+        "optionName": "동물복지 유정란 단호박 케이크 300g"
+      },
+      {
+        "optionName": "동물복지 유정란 브로콜리 케이크 300g"
+      },
+      {
+        "optionName": "동물복지 유정란 블루베리 케이크 300g"
+      }
+    ]
+  },
+  {
+    "categoryName": "Bakery",
+    "productName": "어글어글 제주치킨 스윗치즈번",
+    "content": "제주치킨과 치즈 풍미를 담아 맛있게 즐기는 베이커리 간식입니다.",
+    "slug": "ugle-jeju-chicken-cheese-bun",
+    "imagePath": "seed/product-images/bakery/어글어글_제주치킨_스윗치즈번.png",
+    "detailImageDirectory": "seed/product-images/bakery/어글어글_제주치킨_스윗치즈번",
+    "brandName": "어글어글",
+    "tags": "강아지간식,치킨,치즈번",
+    "price": 5000
+  },
+  {
+    "categoryName": "스위피 그린빈",
+    "productName": "스위피 소이밀크 펫두유 1BOX",
+    "content": "반려견도 부담 없이 즐길 수 있는 소이밀크 펫두유 1BOX 구성입니다.",
+    "slug": "sweepy-soymilk-box",
+    "imagePath": "seed/product-images/meal/스위피그린빈/스위피_소이밀크_펫두유1BOX_1.jpg",
+    "detailImageDirectory": "seed/product-images/meal/스위피그린빈/스위피_소이밀크_펫두유",
+    "brandName": "스위피",
+    "tags": "강아지식사,두유,그린빈",
+    "price": 24000
+  },
+  {
+    "categoryName": "스위피 그린빈",
+    "productName": "어글어글 제주야채 믹스샐러드",
+    "content": "제주산 야채를 담아 가볍게 곁들이기 좋은 믹스샐러드입니다.",
+    "slug": "ugle-jeju-veggie-salad",
+    "imagePath": "seed/product-images/meal/스위피그린빈/어글어글_제주야채_믹스샐러드.jpg",
+    "detailImageDirectory": "seed/product-images/meal/스위피그린빈/어글어글_제주야채_믹스샐러드",
+    "brandName": "어글어글",
+    "tags": "강아지식사,야채,샐러드",
+    "price": 6500
+  },
+  {
+    "categoryName": "스위피 테린",
+    "productName": "뉴 비프테린",
+    "content": "부드러운 식감의 비프 테린으로 한 끼를 든든하게 채워주는 식사입니다.",
+    "slug": "new-beef-terrine",
+    "imagePath": "seed/product-images/meal/스위피테린/스위피테린/뉴_비프테린_1.jpg",
+    "detailImageDirectory": "seed/product-images/meal/스위피테린/스위피테린/뉴비프테린",
+    "brandName": "스위피",
+    "tags": "강아지식사,테린,비프",
+    "price": 4400
+  },
+  {
+    "categoryName": "스위피 테린",
+    "productName": "대구테린",
+    "content": "담백한 대구를 부드럽게 즐길 수 있는 테린 식사입니다.",
+    "slug": "cod-terrine",
+    "imagePath": "seed/product-images/meal/스위피테린/스위피테린/대구테린_1.jpg",
+    "detailImageDirectory": "seed/product-images/meal/스위피테린/스위피테린/대구테린",
+    "brandName": "스위피",
+    "tags": "강아지식사,테린,대구",
+    "price": 4000
+  },
+  {
+    "categoryName": "스위피 테린",
+    "productName": "덕테린",
+    "content": "오리의 풍미를 촉촉하게 담아낸 테린 식사입니다.",
+    "slug": "duck-terrine",
+    "imagePath": "seed/product-images/meal/스위피테린/스위피테린/덕테린_1.jpg",
+    "detailImageDirectory": "seed/product-images/meal/스위피테린/스위피테린/덕테린",
+    "brandName": "스위피",
+    "tags": "강아지식사,테린,오리",
+    "price": 3600
+  },
+  {
+    "categoryName": "스위피 테린",
+    "productName": "연어테린",
+    "content": "연어를 부드럽게 갈아 만든 촉촉한 테린 식사입니다.",
+    "slug": "salmon-terrine",
+    "imagePath": "seed/product-images/meal/스위피테린/스위피테린/연어테린_1.jpg",
+    "detailImageDirectory": "seed/product-images/meal/스위피테린/스위피테린/연어테린",
+    "brandName": "스위피",
+    "tags": "강아지식사,테린,연어",
+    "price": 4000
+  },
+  {
+    "categoryName": "스위피 테린",
+    "productName": "치킨테린",
+    "content": "닭고기를 부드럽게 담아 부담 없이 즐기는 테린 식사입니다.",
+    "slug": "chicken-terrine",
+    "imagePath": "seed/product-images/meal/스위피테린/스위피테린/치킨테린_1.jpg",
+    "detailImageDirectory": "seed/product-images/meal/스위피테린/스위피테린/치킨테린",
+    "brandName": "스위피",
+    "tags": "강아지식사,테린,치킨",
+    "price": 2800
+  },
+  {
+    "categoryName": "어글어글 스팀",
+    "productName": "어글어글 스팀 100g 8종",
+    "content": "어글어글 스팀 8종을 100g 구성으로 다양하게 즐길 수 있는 상품입니다.",
+    "slug": "ugle-steam-100g-8",
+    "imagePath": "seed/product-images/meal/어글어글_스팀/어글어글스팀/어글어글스팀_100g_8종.jpg",
+    "detailImageDirectory": "seed/product-images/meal/어글어글_스팀/어글어글스팀/어글어글스팀_100g",
+    "brandName": "어글어글",
+    "tags": "강아지식사,스팀,100g",
+    "price": 8000,
+    "options": [
+      {
+        "optionName": "제주 치킨 채소 믹스 스팀 100g"
+      },
+      {
+        "optionName": "전남 나주 유황오리 채소 믹스 스팀 100g"
+      },
+      {
+        "optionName": "제주 흑돼지 채소 믹스 스팀 100g",
+        "extraPrice": 500
+      },
+      {
+        "optionName": "호주 캥거루 채소 믹스 스팀 100g",
+        "extraPrice": 1500
+      },
+      {
+        "optionName": "제주 말고기 채소 믹스 스팀 100g",
+        "extraPrice": 1500
+      },
+      {
+        "optionName": "뉴질랜드 양고기 채소 믹스 스팀 100g",
+        "extraPrice": 1500
+      }
+    ]
+  },
+  {
+    "categoryName": "어글어글 스팀",
+    "productName": "어글어글 스팀 300g 대용량 8종",
+    "content": "어글어글 스팀을 활용하기 좋은 300g 대용량 구성입니다.",
+    "slug": "ugle-steam-300g",
+    "imagePath": "seed/product-images/meal/어글어글_스팀/어글어글스팀/어글어글스팀_300g_대용량.jpg",
+    "detailImageDirectory": "seed/product-images/meal/어글어글_스팀/어글어글스팀/어글어글스팀_300g",
+    "brandName": "어글어글",
+    "tags": "강아지식사,스팀,대용량",
+    "price": 24000,
+    "options": [
+      {
+        "optionName": "제주 치킨 채소 믹스 스팀 300g (대용량)"
+      },
+      {
+        "optionName": "전남 나주 유황오리 채소 믹스 스팀 300g (대용량)"
+      },
+      {
+        "optionName": "제주 흑돼지 채소 믹스 스팀 300g (대용량)",
+        "extraPrice": 1500
+      },
+      {
+        "optionName": "호주 캥거루 채소 믹스 스팀 300g (대용량)",
+        "extraPrice": 4500
+      },
+      {
+        "optionName": "제주 말고기 채소 믹스 스팀 300g (대용량)",
+        "extraPrice": 4500
+      },
+      {
+        "optionName": "뉴질랜드 양고기 채소 믹스 스팀 300g (대용량)",
+        "extraPrice": 4500
+      }
+    ]
+  },
+  {
+    "categoryName": "어글어글 우유껌",
+    "productName": "어글어글 우유껌 50g 7종",
+    "content": "쫄깃하게 즐길 수 있는 우유껌 7종을 담은 간식입니다.",
+    "slug": "ugle-milk-gum-50g-7",
+    "imagePath": "seed/product-images/snack_jerky/어글어글_우유껌/어글어글_우유껌_50g_7종_1.png",
+    "detailImageDirectory": "seed/product-images/snack_jerky/어글어글_우유껌/어글어글우유껌/우유껌",
+    "brandName": "어글어글",
+    "tags": "강아지간식,우유껌,껌",
+    "price": 6500,
+    "options": [
+      {
+        "optionName": "제주 당근 우유껌 50g"
+      },
+      {
+        "optionName": "제주 단호박 우유껌 50g"
+      },
+      {
+        "optionName": "제주 브로콜리 우유껌 50g"
+      },
+      {
+        "optionName": "제주 블루베리 우유껌 50g",
+        "extraPrice": 1000
+      },
+      {
+        "optionName": "전북 순창 딸기 우유껌 50g",
+        "extraPrice": 1000
+      },
+      {
+        "optionName": "해외 애플망고 우유껌 50g",
+        "extraPrice": 1000
+      },
+      {
+        "optionName": "해외 크랜베리 우유껌 50g",
+        "extraPrice": 1000
+      }
+    ]
+  },
+  {
+    "categoryName": "어글어글 육포",
+    "productName": "어글어글 육포 대용량 5종",
+    "content": "다양한 맛의 육포 5종을 대용량으로 즐길 수 있는 구성입니다.",
+    "slug": "ugle-jerky-large-5",
+    "imagePath": "seed/product-images/snack_jerky/어글어글_육포/어글어글육포/어글어글육포_대용량5종_1.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/어글어글_육포/어글어글육포/대용량_육포",
+    "brandName": "어글어글",
+    "tags": "강아지간식,육포,대용량",
+    "price": 75000,
+    "options": [
+      {
+        "optionName": "제주 닭 안심 육포 50g 10개입"
+      },
+      {
+        "optionName": "전라남도 나주 유황오리 안심 육포 50g 10개입",
+        "extraPrice": 10000
+      },
+      {
+        "optionName": "제주 흑돼지 육포 50g 10개입",
+        "extraPrice": 10000
+      },
+      {
+        "optionName": "제주 말고기 육포 50g 10개입",
+        "extraPrice": 20000
+      },
+      {
+        "optionName": "해외 칠면조 가슴살 육포 50g 10개입",
+        "extraPrice": 20000
+      }
+    ]
+  },
+  {
+    "categoryName": "어글어글 육포",
+    "productName": "어글어글 육포 50g 5종",
+    "content": "쫄깃한 식감과 풍부한 풍미를 담은 어글어글 육포입니다.",
+    "slug": "ugle-jerky-best-2",
+    "imagePath": "seed/product-images/snack_jerky/어글어글_육포/어글어글육포/어글어글육포_50g_5종_1.png",
+    "detailImageDirectory": "seed/product-images/snack_jerky/어글어글_육포/어글어글육포/육포",
+    "brandName": "어글어글",
+    "tags": "강아지간식,육포,인기",
+    "price": 7500,
+    "options": [
+      {
+        "optionName": "제주 닭 안심 육포 50g"
+      },
+      {
+        "optionName": "전라남도 나주 유황오리 안심 육포 50g",
+        "extraPrice" : 1000
+      },
+      {
+        "optionName": "제주 흑돼지 육포 50g",
+        "extraPrice" : 1000
+      },
+      {
+        "optionName": "제주 말고기 육포 50g",
+        "extraPrice" : 2000
+      },
+      {
+        "optionName": "해외 칠면조 가슴살 육포 50g",
+        "extraPrice" : 2000
+      }
+    ]
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 3종세트",
+    "content": "오독오독 바삭 인기 3종을 한 번에 즐길 수 있는 세트입니다.",
+    "slug": "odok-crispy-3-set",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_3종세트.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_3종",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,세트",
+    "price": 47700
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 6종세트",
+    "content": "오독오독 바삭 6종을 넉넉하게 담은 세트 상품입니다.",
+    "slug": "odok-crispy-6-set",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_6종세트_1.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_6종",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,세트",
+    "price": 100400
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 고구마",
+    "content": "고구마를 바삭하게 건조해 달콤하게 즐길 수 있는 간식입니다.",
+    "slug": "odok-crispy-sweet-potato",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_고구마.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_고구마",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,고구마",
+    "price": 15900
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 당근",
+    "content": "당근을 바삭하게 건조해 가볍게 즐길 수 있는 간식입니다.",
+    "slug": "odok-crispy-carrot",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_당근.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_당근",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,당근",
+    "price": 15900
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 캥거루 120g",
+    "content": "캥거루 원물을 바삭하게 건조해 만든 120g 간식입니다.",
+    "slug": "odok-crispy-kangaroo-120g",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_캥거루.png",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_캥거루",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,캥거루",
+    "price": 20900
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 덕브로콜리",
+    "content": "오리와 브로콜리를 바삭하게 담아 식감과 풍미를 살린 간식입니다.",
+    "slug": "odok-crispy-duck-broccoli",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_덕브로콜리.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_덕브로콜리",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,오리",
+    "price": 20900
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 연어껍질 120g",
+    "content": "연어껍질을 바삭하게 건조해 고소한 식감을 살린 120g 간식입니다.",
+    "slug": "odok-crispy-salmon-skin-120g",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_연어껍질.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_연어껍질",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,연어껍질",
+    "price": 15900
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 시금치 120g",
+    "content": "시금치를 바삭하게 즐길 수 있도록 만든 120g 간식입니다.",
+    "slug": "odok-crispy-spinach-120g",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_시금치.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_시금치",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,시금치",
+    "price": 15900
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 치킨블루베리 120g",
+    "content": "치킨과 블루베리를 함께 담아 바삭하게 즐기는 120g 간식입니다.",
+    "slug": "odok-crispy-chicken-blueberry-120g",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_치킨블루베리.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_치킨블루베리",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,치킨블루베리",
+    "price": 15900
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 덕블연 3종세트",
+    "content": "오리, 블루베리, 연어 계열 바삭 간식을 한 번에 담은 3종 세트입니다.",
+    "slug": "odok-crispy-duck-blueberry-salmon-set",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_바삭_덕블연_3종세트.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_덕블연_3종",
+    "brandName": "오독오독",
+    "tags": "강아지간식,바삭,세트",
+    "price": 52700
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 포켓 3종 대용량 (5개입)",
+    "content": "오독오독 포켓 3종을 넉넉하게 구성한 대용량 5개입 세트입니다.",
+    "slug": "odok-pocket-3-large-5pack",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독_포켓3종_대용량.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_포켓3종_대용량",
+    "brandName": "오독오독",
+    "tags": "강아지간식,오독오독,포켓",
+    "price": 19000,
+    "options": [
+      {
+        "optionName": "포켓 표고버섯"
+      },
+      {
+        "optionName": "포켓 햄프씨드"
+      },
+      {
+        "optionName": "포켓 스피루리나"
+      }
+    ]
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "스위피 오독오독 미니 2종 60g",
+    "content": "작은 크기로 부담 없이 즐길 수 있는 스위피 오독오독 미니 2종 60g 간식입니다.",
+    "slug": "sweepy-odok-mini-2-60g",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/종스위피_오독오독_미니2종.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/스위피_오독오독_미니2종",
+    "brandName": "스위피",
+    "tags": "강아지간식,오독오독,미니",
+    "price": 9800
+  },
+  {
+    "categoryName": "오독오독",
+    "productName": "오독오독 바삭 10종 골라담기",
+    "content": "오독오독 바삭 10종 중 원하는 맛을 골라 담을 수 있는 상품입니다.",
+    "slug": "odok-crispy-10-picks",
+    "imagePath": "seed/product-images/snack_jerky/오독오독/오독오독 바삭 10종 골라담기_1.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오독오독/오독오독/오독오독_바삭_10종",
+    "brandName": "오독오독",
+    "tags": "강아지간식,오독오독",
+    "price": 15900,
+    "options": [
+      {
+        "optionName": "바삭 고구마",
+        "extraPrice": 0
+      },
+      {
+        "optionName": "바삭 당근",
+        "extraPrice": 0
+      },
+      {
+        "optionName": "바삭 시금치",
+        "extraPrice": 0
+      },
+      {
+        "optionName": "바삭 덕브로콜리",
+        "extraPrice": 5000
+      },
+      {
+        "optionName": "바삭 치킨블루베리",
+        "extraPrice": 0
+      },
+      {
+        "optionName": "바삭 연어껍질",
+        "extraPrice": 0
+      },
+      {
+        "optionName": "바삭 캥거루",
+        "extraPrice": 5000
+      },
+      {
+        "optionName": "바삭 미니 비프 60g",
+        "extraPrice": 0
+      },
+      {
+        "optionName": "바삭 미니 치킨 비트 60g",
+        "extraPrice": -6100
+      },
+      {
+        "optionName": "바삭 미니 황태 60g",
+        "extraPrice": 0
+      }
+    ]
+  },
+  {
+    "categoryName": "오래먹는 간식",
+    "productName": "스위피 꽈배기 츄 40g",
+    "content": "스위피 꽈배기 츄입니다.",
+    "slug": "sweepy-chu",
+    "imagePath": "seed/product-images/snack_jerky/오래먹는_간식/스위피_꽈배기_츄_1.png",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오래먹는_간식/스위피_과빼기츄",
+    "brandName": "스위피",
+    "tags": "스위피",
+    "price": 12900
+  },
+  {
+    "categoryName": "오래먹는 간식",
+    "productName": "스위피 덕본 오리뼈 오리날개뼈 150g",
+    "content": "스위피 덕본 오리뼈 오리날개뼈입니다..",
+    "slug": "sweepy-duck",
+    "imagePath": "seed/product-images/snack_jerky/오래먹는_간식/스위피덕본_오리뼈_오리날개뼈_1.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오래먹는_간식/스위피_덕본_오리뼈",
+    "brandName": "스위피",
+    "tags": "스위피",
+    "price": 8900
+  },
+  {
+    "categoryName": "오래먹는 간식",
+    "productName": "스위피 덕본 오리뼈 오리목뼈 150g",
+    "content": "스위피 덕본 오리뼈 오리목뼈입니다.",
+    "slug": "sweepy-duck-neck",
+    "imagePath": "seed/product-images/snack_jerky/오래먹는_간식/스위피덕본_오리뼈_오리목뼈_1.jpg",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오래먹는_간식/스위피_덕본_오리뼈_오리목뼈",
+    "brandName": "스위피",
+    "tags": "스위피",
+    "price": 8900
+  },
+  {
+    "categoryName": "오래먹는 간식",
+    "productName": "어글어글 강원도 대관령 무염 황태채 40g",
+    "content": "어글어글 강원도 대관령 무염 황태채입니다.",
+    "slug": "ugle-dried-pollack",
+    "imagePath": "seed/product-images/snack_jerky/오래먹는_간식/어글어글_강원도대관령_무염황태채.png",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오래먹는_간식/어글어글_강원도_대관령_무염_황태채",
+    "brandName": "어글어글",
+    "tags": "어글어글",
+    "price": 12000
+  },
+  {
+    "categoryName": "오래먹는 간식",
+    "productName": "어글어글 뼈 간식 4종",
+    "content": "어글어글 뼈 간식입니다.",
+    "slug": "ugle-bone-snack",
+    "imagePath": "seed/product-images/snack_jerky/오래먹는_간식/어글어글_뼈간식4종.png",
+    "detailImageDirectory": "seed/product-images/snack_jerky/오래먹는_간식/어글어글_뼈간식",
+    "brandName": "어글어글",
+    "tags": "어글어글",
+    "price": 6500,
+    "options": [
+      {
+        "optionName": "제주 통닭발 6개입"
+      },
+      {
+        "optionName": "전라도 나주 유황오리 도가니뼈 80g"
+      },
+      {
+        "optionName": "메추리 통구이",
+        "extraPrice": 2000
+      },
+      {
+        "optionName": "강원도 대관령 무염 황태채 40g",
+        "extraPrice": 5500
+      }
+    ]
+  }
+]

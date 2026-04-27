@@ -1,0 +1,11 @@
+spring:
+  cloud:
+    vault:
+      uri: http://dseum-vault:8200
+      token: eum-root
+      ssl:
+        enabled: false  # 💡 이게 핵심입니다. 라이브러리가 https를 추측하지 못하게 막음
+      kv:
+        enabled: true
+        backend: secret
+        default-context: dseum-gateway

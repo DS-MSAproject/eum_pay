@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="SERVICE_NAME" value="searchserver" />
+
+    <property name="METRIC_LOG_PATH" value="/app/logs/metrics" />
+
+    <include resource="base-logback.xml"/>
+
+    <logger name="org.springframework.data.elasticsearch" level="WARN" />
+    <logger name="org.elasticsearch.client" level="WARN" />
+    <logger name="com.eum.searchserver" level="INFO" />
+
+    <appender name="METRIC_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${METRIC_LOG_PATH}/search_metrics.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${METRIC_LOG_PATH}/search_metrics.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.eum.searchserver.service.ProductService" level="INFO" additivity="false">
+        <appender-ref ref="METRIC_FILE" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>

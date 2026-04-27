@@ -1,0 +1,274 @@
+server:
+  port: 8072
+  ssl:
+    enabled: true
+    # 💡 파일 경로 대신 Vault에서 주입받은 프로퍼티 매핑
+    key-store: "file:/vault/data/certificate.p12"
+    key-store-password: "${keystore_password}"
+    key-alias: "${key_alias}"
+    key-store-type: "${key_store_type}"
+spring:
+  application:
+    name: dseum-gateway
+  config:
+    import: "optional:configserver:http://configserver:8071"
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: 1234
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+
+          routes:
+            - id: auth-server
+              uri: lb://AUTHSERVER
+              predicates:
+                - Path=/api/v1/auth/**, /api/v1/oauth2/**, /api/v1/login/oauth2/**, /.well-known/**
+              filters:
+                - RewritePath=/api/v1/auth/?(?<segment>.*), /auth/${segment}
+                - RewritePath=/api/v1/oauth2/?(?<segment>.*), /oauth2/${segment}
+                - RewritePath=/api/v1/login/oauth2/?(?<segment>.*), /login/oauth2/${segment}
+                # 로그인/회원가입은 더 엄격하게 제한
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: user-service
+              uri: lb://AUTHSERVER
+              predicates:
+                - Path=/api/v1/users/**
+              filters:
+                - RewritePath=/api/v1/users/?(?<segment>.*), /users/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: product-main-image
+              uri: lb://DSEUM-PRODUCT
+              predicates:
+                - Path=/api/v1/product/main/**
+              filters:
+                - RewritePath=/api/v1/product/main/?(?<segment>.*), /product/main/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: product-service
+              uri: lb://DSEUM-PRODUCT
+              predicates:
+                - Path=/api/v1/product/**
+              filters:
+                - RewritePath=/api/v1/product/?(?<segment>.*), /product/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: order-service
+              uri: lb://DSEUM-ORDER
+              predicates:
+                - Path=/api/v1/orders/**
+              filters:
+                - RewritePath=/api/v1/orders/?(?<segment>.*), /orders/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: cart-service
+              uri: lb://DSEUM-CART
+              predicates:
+                - Path=/api/v1/cart/**
+              filters:
+                - RewritePath=/api/v1/cart/?(?<segment>.*), /cart/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: review-service
+              uri: lb://DSEUM-REVIEW
+              predicates:
+                - Path=/api/v1/reviews/**
+              filters:
+                - RewritePath=/api/v1/reviews/?(?<segment>.*), /reviews/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: search-service
+              uri: lb://DSEUM-SEARCH
+              predicates:
+                - Path=/api/v1/search/**
+              filters:
+                - RewritePath=/api/v1/search/?(?<segment>.*), /search/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: board-service
+              uri: lb://DSEUM-BOARD
+              predicates:
+                - Path=/api/v1/notices/**
+              filters:
+                - RewritePath=/api/v1/notices/?(?<segment>.*), /notices/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: inventory-admin-service
+              uri: lb://DSEUM-INVENTORY
+              predicates:
+                - Path=/api/v1/admin/inventory/**
+              filters:
+                - RewritePath=/api/v1/admin/inventory/?(?<segment>.*), /admin/inventory/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: inventory-service
+              uri: lb://DSEUM-INVENTORY
+              predicates:
+                - Path=/api/v1/inventory/**
+              filters:
+                - RewritePath=/api/v1/inventory/?(?<segment>.*), /inventory/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: rag-service
+              uri: lb://RAGSERVER
+              predicates:
+                - Path=/api/v1/rag/**
+              filters:
+                - RewritePath=/api/v1/rag/?(?<segment>.*), /rag/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: payment-service
+              uri: lb://DSEUM-PAYMENT
+              predicates:
+                - Path=/api/v1/payments/**
+              filters:
+                - RewritePath=/api/v1/payments/?(?<segment>.*), /payments/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+      static-index-server:
+        enabled: true
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+auth:
+  jwks-uri: http://AUTHSERVER/.well-known/jwks.json
+  jwks-refresh-interval: 3600
+
+# 허용 Origin — 환경별로 오버라이드 가능
+# 운영 배포 시: SPRING_APP_ALLOWED-ORIGINS=https://dseum.co.kr
+app:
+  allowed-origins:
+    - https://localhost:5173
+    - http://localhost
+    - https://eum.gateway.com
+  cookie:
+    secure: true  # HTTPS 배포 시 true로 변경
+    same-site: Lax # Strict
+
+orders:
+  grpc:
+    host: orderserver
+    port: 9091
+whitelist:
+  paths:
+    - /api/v1/auth/login
+    - /api/v1/auth/signup
+    - /api/v1/auth/refresh    #로그인 연장용 API accesstoken이 만료 가지고있는 refreshtoken으로  새 accesstoken 발급
+    - /api/v1/auth/terms
+    - /api/v1/auth/email/send
+    - /api/v1/auth/email/verify
+    - /.well-known/**   #JWT 검증용 공개키(JWKS)를 제공하는 용도
+    - /api/v1/oauth2/**
+    - /api/v1/login/oauth2/**
+    - /api/v1/csrf
+    - /actuator/**
+    - /api/v1/product/**
+    - /api/v1/search/**
+    - /api/v1/notices/**
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eurekaserver:8070/eureka/
+
+# 프로메테우스 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus"
+
+  endpoint:
+    health:
+      access: read_only
+      show-details: always
+    prometheus:
+      access: read_only
+
+  metrics:
+    tags:
+      # 💡 위에서 설정한 고유한 name을 자동으로 물고 들어갑니다. (무결성 포인트)
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      # 💡 1.0 = 모든 요청을 100% 추적 (개발 중에는 무결성을 위해 1.0 권장)
+      # 운영 중에는 9060XT급 부하를 줄이기 위해 0.1(10%) 정도로 조절합니다.
+      probability: 1.0
+    zipkin:
+      tracing:
+        # 💡 도커 컴포즈에 설정한 zipkin-server 주소와 포트
+        endpoint: "http://zipkin-server:9411/api/v2/spans"

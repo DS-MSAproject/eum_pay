@@ -1,0 +1,64 @@
+flowchart LR
+    subgraph ORD["orderserver — OrderState transition"]
+        direction TB
+        CO["ORDER_CHECKED_OUT"]
+        OS_RESOK["INVENTORY_RESERVED"]
+        OS_RESFAIL["INVENTORY_RESERVATION_FAILED ❌"]
+        OS_PAYOK["PAYMENT_COMPLETED"]
+        OS_PAYFAIL["PAYMENT_FAILED ❌"]
+        OS_DONE["ORDER_COMPLETED ✅"]
+        OS_DEDFAIL["INVENTORY_DEDUCTION_FAILED ❌"]
+        OS_RELED["INVENTORY_RELEASED\n(compensation done)"]
+        OS_RELFAIL["INVENTORY_RELEASE_FAILED ❌"]
+    end
+
+    subgraph INV["inventoryserver"]
+        IR["InventoryReserved published"]
+        IRF["InventoryReservationFailed published"]
+        PR["PaymentRequested published"]
+        ID["InventoryDeducted published"]
+        IDF["InventoryDeductionFailed published"]
+        IREL["InventoryReleased published"]
+        IRELF["InventoryReleaseFailed published"]
+    end
+
+    subgraph PAY["paymentserver"]
+        PAY_READY["Payment(READY) created"]
+        PAY_CONF["Payment approved ✅\nPaymentCompleted published"]
+        PAY_FAIL["Payment failed ❌\nPaymentFailed published"]
+        PAY_CAN["Payment cancelled\nPaymentCancelled published"]
+    end
+
+    CO -->|OrderCheckedOut| IR
+    CO -->|OrderCheckedOut| IRF
+
+    IR -->|InventoryReserved| OS_RESOK
+    IRF -->|InventoryReservationFailed| OS_RESFAIL
+
+    IR -->|PaymentRequested| PAY_READY
+    PAY_READY -->|"frontend confirm call"| PAY_CONF
+    PAY_READY -.->|"timeout / Toss error"| PAY_FAIL
+
+    PAY_CONF -->|PaymentCompleted| OS_PAYOK
+    PAY_CONF -->|PaymentCompleted| ID
+    ID -->|InventoryDeducted| OS_DONE
+    IDF -->|InventoryDeductionFailed| OS_DEDFAIL
+
+    PAY_FAIL -->|PaymentFailed| OS_PAYFAIL
+    PAY_FAIL -->|PaymentFailed| IREL
+
+    IREL -->|InventoryReleased| OS_RELED
+    IRELF -->|InventoryReleaseFailed| OS_RELFAIL
+
+    PAY_CAN -.->|"PaymentCancelled\n(external cancel path)"| IREL
+
+    style CO fill:#4A90D9,color:#fff
+    style PAY_CONF fill:#27AE60,color:#fff
+    style OS_DONE fill:#27AE60,color:#fff
+    style OS_RESFAIL fill:#E74C3C,color:#fff
+    style OS_PAYFAIL fill:#E74C3C,color:#fff
+    style OS_DEDFAIL fill:#E74C3C,color:#fff
+    style OS_RELFAIL fill:#E74C3C,color:#fff
+    style OS_RELED fill:#F39C12,color:#fff
+    style PAY_FAIL fill:#E74C3C,color:#fff
+    style IRF fill:#E74C3C,color:#fff

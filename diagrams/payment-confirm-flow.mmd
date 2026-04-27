@@ -1,0 +1,84 @@
+sequenceDiagram
+    autonumber
+    participant FE  as Frontend (React)
+    participant GW  as gatewayserver
+    participant PS  as paymentserver (PaymentService)
+    participant SSE as PaymentSseService
+    participant DB  as PostgreSQL
+    participant CB  as CircuitBreaker (toss)
+    participant Toss as Toss API
+    participant OB  as payment_outbox
+    participant DEB as Debezium
+    participant K   as Kafka
+
+    Note over FE,SSE: [Prerequisite] SSE subscription — connect before or simultaneously with confirm
+
+    FE->>GW: GET /payments/orders/{orderId}/events
+    GW->>PS: SSE subscribe request
+    PS->>SSE: subscribe(orderId)
+    SSE-->>FE: text/event-stream established<br/>(100ms keepalive heartbeat)
+
+    Note over FE,K: [Main Flow] Toss payment confirmation
+
+    FE->>GW: POST /payments/confirm<br/>{ paymentKey, orderId, amount }
+    GW->>PS: confirm(request)
+
+    rect rgb(220, 240, 255)
+        Note over PS,DB: Phase 1 — short read TX (DB connection released immediately)
+        PS->>DB: findByOrderId() + amount validation
+        DB-->>PS: Payment (READY)
+    end
+
+    rect rgb(255, 245, 200)
+        Note over PS,Toss: Phase 2 — no DB connection held, external API call
+        PS->>CB: check call permission
+
+        alt CB OPEN — failure rate >= 50% (sliding window 10 calls)
+            CB-->>PS: CallNotPermittedException
+            PS-->>GW: 503 Service Unavailable
+            GW-->>FE: 503 (no SSE event)
+        else CB CLOSED / HALF-OPEN
+            PS->>Toss: POST /v1/payments/confirm (timeout 10s)<br/>with idempotencyKey header
+
+            alt Toss approval success
+                Toss-->>PS: TossPaymentResponse (DONE)
+                rect rgb(220, 255, 220)
+                    Note over PS,OB: Phase 3 — success write TX (@Version optimistic lock)
+                    PS->>DB: payment.approve() + version check
+                    PS->>OB: enqueue PaymentCompleted event
+                end
+                PS->>SSE: publishCompleted(payment)
+                SSE-->>FE: payment-status event<br/>{ status: APPROVED, approvedAt }
+                PS-->>GW: 200 PaymentResponse (APPROVED)
+                GW-->>FE: 200 PaymentResponse
+
+            else Toss error (4xx / 5xx)
+                Toss-->>PS: WebClientResponseException
+                rect rgb(255, 220, 220)
+                    Note over PS,OB: Phase 3 — failure write TX
+                    PS->>DB: payment.fail(errorCode, msg)
+                    PS->>OB: enqueue PaymentFailed event
+                end
+                PS->>SSE: publishFailed(payment)
+                SSE-->>FE: payment-status event<br/>{ status: FAILED, failureCode, failureMessage }
+                PS-->>GW: 500 error
+                GW-->>FE: 500 error
+
+            else Reactor Timeout (exceeded 10s)
+                Toss-->>PS: TimeoutException
+                rect rgb(255, 220, 220)
+                    Note over PS,OB: Phase 3 — timeout failure write TX
+                    PS->>DB: payment.fail("TIMEOUT")
+                    PS->>OB: enqueue PaymentFailed event
+                end
+                PS->>SSE: publishFailed(payment)
+                SSE-->>FE: payment-status event<br/>{ status: FAILED, failureCode: TIMEOUT }
+                PS-->>GW: 500 request timeout
+                GW-->>FE: 500 request timeout
+            end
+        end
+    end
+
+    Note over OB,K: Debezium CDC — detects payment_outbox INSERT, publishes to Kafka
+    DEB->>OB: CDC polling
+    DEB->>K: PaymentCompleted / PaymentFailed topic published

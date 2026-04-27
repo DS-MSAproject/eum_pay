@@ -1,0 +1,139 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: dseum-payment
+
+  config:
+    import:
+      - "optional:configserver:${CONFIGSERVER_URI:http://configserver:8071}"
+      - "optional:vault://"
+
+  datasource:
+    url: ${PAYMENT_DB_URL:jdbc:postgresql://localhost:5438/dseum_payment}
+    username: ${PAYMENT_DB_USERNAME:postgres}
+    password: ${PAYMENT_DB_PASSWORD:1234}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+
+  cloud:
+    bootstrap:
+      enabled: false
+    compatibility-verifier:
+      enabled: false
+    bus:
+      enabled: true
+      refresh:
+        enabled: true
+    vault:
+      host: ${VAULT_HOST:dseum-vault}
+      port: ${VAULT_PORT:8200}
+      scheme: ${VAULT_SCHEME:http}
+      authentication: TOKEN
+      token: ${VAULT_TOKEN:eum-root}
+      kv:
+        enabled: true
+        backend: secret
+        application-name: ${spring.application.name}
+    function:
+      definition: paymentRequestedConsumer;orderCancelledConsumer
+    stream:
+      instance-count: ${STREAM_INSTANCE_COUNT:1}
+      instance-index: ${STREAM_INSTANCE_INDEX:0}
+      default:
+        contentType: application/json
+      bindings:
+        paymentRequestedConsumer-in-0:
+          destination: PaymentRequested
+          group: dseum-payment-requested
+          consumer:
+            partitioned: true
+        orderCancelledConsumer-in-0:
+          destination: OrderCancelled
+          group: dseum-payment-order-cancelled
+          consumer:
+            partitioned: true
+      kafka:
+        binder:
+          brokers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092,kafka2:9092,kafka3:9092}
+        bindings:
+          paymentRequestedConsumer-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-partitions: 1
+              auto-commit-on-error: true
+          orderCancelledConsumer-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-partitions: 1
+              auto-commit-on-error: true
+
+# TODO: Vault .env에 TOSS_SECRET_KEY 추가 후 이 항목 제거
+
+payment:
+  provider: TOSS
+  toss:
+    base-url: ${TOSS_BASE_URL:https://api.tosspayments.com}
+    secret-key: ${TOSS_SECRET_KEY:test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6}
+    confirm-path: /v1/payments/confirm
+    cancel-path-template: /v1/payments/%s/cancel
+  policy:
+    approve-timeout-seconds: ${PAYMENT_APPROVE_TIMEOUT_SECONDS:10}
+    cancel-timeout-seconds: ${PAYMENT_CANCEL_TIMEOUT_SECONDS:10}
+    compensation-max-retry: ${PAYMENT_COMPENSATION_MAX_RETRY:5}
+    compensation-backoff-ms: ${PAYMENT_COMPENSATION_BACKOFF_MS:2000}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      toss:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        record-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadGateway
+          - org.springframework.web.reactive.function.client.WebClientResponseException$ServiceUnavailable
+          - org.springframework.web.reactive.function.client.WebClientResponseException$GatewayTimeout
+        ignore-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest
+          - org.springframework.web.reactive.function.client.WebClientResponseException$UnprocessableEntity
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eurekaserver:8070/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus,bus-refresh"
+
+  endpoint:
+    health:
+      access: read_only
+      show-details: always
+    prometheus:
+      access: read_only
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+    zipkin:
+      tracing:
+        endpoint: "http://zipkin-server:9411/api/v2/spans"

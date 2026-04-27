@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: eum-config
+
+  config:
+    import:
+      - "optional:vault://"
+
+  cloud:
+    vault:
+      host: ${VAULT_HOST:localhost}
+      port: 8200
+      scheme: http
+      authentication: TOKEN
+      token: eum-root
+      kv:
+        enabled: true
+        backend: secret
+
+    bus:
+      enabled: true
+      id: ${spring.application.name}:${server.port}
+
+    config:
+      server:
+        vault:
+          host: ${VAULT_HOST:vault}
+          port: 8200
+          scheme: http
+          authentication: TOKEN
+          token: eum-root
+          kv-version: 2
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+server:
+  port: 8071
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  tracing:
+    sampling:
+      probability: 1.0
+    propagation:
+      consume: b3
+      produce: b3_multi
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+  zipkin:
+    tracing:
+      endpoint: http://zipkin-server:9411/api/v2/spans
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  charset:
+    console: UTF-8

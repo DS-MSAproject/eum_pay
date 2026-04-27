@@ -1,0 +1,105 @@
+// orderserver 모듈의 build.gradle
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    // id 'com.palantir.docker' version '0.35.0'
+    id 'com.google.cloud.tools.jib' version '3.4.1'
+}
+// ... 나머지 설정은 동일
+
+group = 'com.eum'
+version = '0.0.2-SNAPSHOT'
+
+java {
+    // Spring Boot 3.5+는 Java 17 이상이 필수이며, Java 21 사용을 강력히 권장합니다.
+    sourceCompatibility = '17'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.1")
+}
+
+dependencies {
+    // Spring
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation' // 유효성 검증 추가 권장
+
+    // Spring Cloud
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    // Micrometer
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    runtimeOnly 'org.postgresql:postgresql'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Vault
+    implementation 'org.springframework.cloud:spring-cloud-starter-vault-config'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+//docker {
+//    name("eum/${project.name}:${version}")
+//    dockerfile file('Dockerfile_')
+//    files bootJar
+//    buildArgs(['JAR_FILE': bootJar.archiveFileName.get()])
+//}
+
+jib {
+    from {
+        // Dockerfile의 FROM eclipse-temurin:17-jdk와 동일
+        image = 'eclipse-temurin:17-jdk'
+    }
+    to {
+        // dseum/productserver:0.0.1-SNAPSHOT 형태
+        image = "dseum/${project.name}"
+        tags = ["${project.version}", 'latest']
+    }
+    container {
+        // Dockerfile의 ENTRYPOINT 설정 자동화
+        // Jib는 알아서 lib, meta-inf, classes를 분리하여 클래스패스를 구성함
+        mainClass = 'com.eum.orderserver.OrderServerApplication'
+
+        // Dockerfile의 VOLUME /tmp
+        volumes = ['/tmp']
+
+        // Dockerfile의 LABEL maintainer
+        labels = [maintainer: 'dseum-order <lisepa7@gmail.com>']
+
+        // 환경 설정 및 인코딩
+        jvmFlags = ['-Dfile.encoding=UTF-8', '-server']
+
+        // 빌드 시간을 현재로 설정
+        creationTime = 'USE_CURRENT_TIMESTAMP'
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

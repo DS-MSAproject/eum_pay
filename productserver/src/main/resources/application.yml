@@ -1,0 +1,92 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: dseum-product
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+
+#  profiles:
+#    active: dev
+
+  # JPA 설정 (원본 유지)
+  jpa:
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+
+  cloud:
+    # 1. 부트스트랩 모드 강제 종료 (에러 방지 핵심!)
+    bootstrap:
+      enabled: false
+
+    # 2. 호환성 검사기 설정
+    compatibility-verifier:
+      enabled: false
+
+    # 3. 볼트 설정
+    vault:
+      host: dseum-vault
+      port: 8200
+      scheme: http
+      authentication: TOKEN
+      token: eum-root
+      kv:
+        enabled: true
+        backend: secret
+        default-context: application
+        profile-separator: "/"
+
+    aws:
+      region:
+        static: ${cloud.aws.region.static:ap-northeast-2} # 👈 값 없으면 서울로 기동
+      credentials:
+        access-key: ${cloud.aws.credentials.access-key}
+        secret-key: ${cloud.aws.credentials.secret-key}
+      s3:
+        bucket: ${cloud.aws.s3.bucket}
+  config:
+    import:
+      - "optional:configserver:http://configserver:8071"
+      - "optional:vault://"
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eurekaserver:8070/eureka/
+
+product:
+  image:
+    presigned-url:
+      enabled: ${PRODUCT_IMAGE_PRESIGNED_URL_ENABLED:true}
+      expiration-minutes: ${PRODUCT_IMAGE_PRESIGNED_URL_EXPIRATION_MINUTES:30}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus"
+
+  endpoint:
+    health:
+      access: read_only
+      show-details: always
+    prometheus:
+      access: read_only
+
+  metrics:
+    tags:
+      # 💡 위에서 설정한 고유한 name을 자동으로 물고 들어갑니다. (무결성 포인트)
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      # 💡 1.0 = 모든 요청을 100% 추적 (개발 중에는 무결성을 위해 1.0 권장)
+      # 운영 중에는 9060XT급 부하를 줄이기 위해 0.1(10%) 정도로 조절합니다.
+      probability: 1.0
+    zipkin:
+      tracing:
+        # 💡 도커 컴포즈에 설정한 zipkin-server 주소와 포트
+        endpoint: "http://zipkin-server:9411/api/v2/spans"

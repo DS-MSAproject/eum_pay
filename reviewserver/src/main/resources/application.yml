@@ -1,0 +1,80 @@
+server:
+  port: 8098
+
+auth:
+  grpc:
+    host: ${AUTH_GRPC_HOST:localhost}
+    port: ${AUTH_GRPC_PORT:9093}
+
+grpc:
+  client:
+    auth-service:
+      address: static://${auth.grpc.host}:${auth.grpc.port}
+      negotiationType: PLAINTEXT
+
+spring:
+  application:
+    name: dseum-review
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  cloud:
+    vault:
+      host: dseum-vault
+      port: 8200
+      scheme: http
+      authentication: TOKEN
+      token: eum-root
+      kv:
+        enabled: true
+        backend: secret
+        default-context: application  # 👈 AWS IAM 키 등 공통 설정 로드
+        profile-separator: "/"
+    aws:
+      region:
+        static: ${cloud.aws.region.static:ap-northeast-2}
+      credentials:
+        access-key: ${cloud.aws.credentials.access-key}
+        secret-key: ${cloud.aws.credentials.secret-key}
+      s3:
+        bucket: ${cloud.aws.s3.bucket}
+
+  config:
+    import:
+      - "optional:configserver:http://configserver:8071"
+      - "vault://"
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eurekaserver:8070/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus"
+
+  endpoint:
+    health:
+      access: read_only
+      show-details: always
+    prometheus:
+      access: read_only
+
+  metrics:
+    tags:
+      # 💡 위에서 설정한 고유한 name을 자동으로 물고 들어갑니다. (무결성 포인트)
+      application: ${spring.application.name}
+
+  tracing:
+    sampling:
+      # 💡 1.0 = 모든 요청을 100% 추적 (개발 중에는 무결성을 위해 1.0 권장)
+      # 운영 중에는 9060XT급 부하를 줄이기 위해 0.1(10%) 정도로 조절합니다.
+      probability: 1.0
+    zipkin:
+      tracing:
+        # 💡 도커 컴포즈에 설정한 zipkin-server 주소와 포트
+        endpoint: "http://zipkin-server:9411/api/v2/spans"

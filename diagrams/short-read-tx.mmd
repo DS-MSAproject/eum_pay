@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant App as PaymentService
+    participant Pool as DB Connection Pool
+    participant DB as PostgreSQL
+    participant Toss as Toss API
+
+    Note over App,Toss: Anti-Pattern — Single Transaction (Connection Pool Exhaustion Risk)
+
+    rect rgb(255, 220, 220)
+        App->>Pool: acquire connection
+        App->>DB: findByOrderId()
+        Note over Pool: connection held<br/>throughout entire flow
+        App->>Toss: POST /v1/payments/confirm<br/>(up to 10s external I/O wait)
+        Toss-->>App: response
+        App->>DB: payment.approve() + outbox INSERT
+        App->>Pool: release connection
+        Note over App,Pool: 100 concurrent requests = 100 connections held simultaneously<br/>Pool exhausted — typical pool size is only 10–20
+    end
+
+    Note over App,Toss: Short Read TX — 3-Phase Pattern (Connection Pool Friendly)
+
+    rect rgb(220, 240, 255)
+        Note over App,DB: Phase 1 — short read TX (readOnly)
+        App->>Pool: acquire connection
+        App->>DB: findByOrderId() + amount validation
+        DB-->>App: Payment(READY)
+        App->>Pool: release connection immediately
+        Note over Pool: connection returned to pool<br/>before any external I/O
+    end
+
+    rect rgb(255, 245, 200)
+        Note over App,Toss: Phase 2 — no DB connection held
+        App->>Toss: POST /v1/payments/confirm<br/>(up to 10s wait)
+        Toss-->>App: TossPaymentResponse (DONE / error / timeout)
+        Note over Pool: pool FREE during<br/>entire Toss API wait
+    end
+
+    rect rgb(220, 255, 220)
+        Note over App,DB: Phase 3 — write TX (@Version optimistic lock)
+        App->>Pool: acquire connection
+        App->>DB: payment.approve() + version check + outbox INSERT
+        App->>Pool: release connection
+    end

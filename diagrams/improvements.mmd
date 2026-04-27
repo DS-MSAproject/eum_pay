@@ -1,0 +1,37 @@
+flowchart LR
+    subgraph BEFORE["🔴 Problems Before"]
+        direction TB
+        B1["Inventory reserve + Outbox save\nseparate TX -> consistency not guaranteed"]
+        B2["No Toss API CB / Timeout\nfailure causes full payment outage"]
+        B3["No Kafka DLQ\nmessage loss undetectable"]
+        B4["No optimistic lock\nconcurrent confirm -> Lost Update"]
+        B5["idempotencyKey reuse\nretry payment may fail"]
+        B6["Outbox dual publish\nlegacy + canonical topic simultaneously"]
+        B7["paymentCancelStatusConsumer\nsubscribes non-existent topic"]
+        B8["Single Kafka broker\ninventoryserver kafka:9092"]
+    end
+
+    subgraph AFTER["🟢 After Improvement"]
+        direction TB
+        A1["@Transactional single boundary\ninventory + Outbox atomic"]
+        A2["Resilience4j CB + Reactor Timeout\nCB OPEN -> immediate 503 fast fail"]
+        A3["enable-dlq: true\nall 14 consumers DLQ-protected"]
+        A4["@Version optimistic lock\nconcurrent request -> 409 Conflict"]
+        A5["refreshPrepareContext\nnew idempotencyKey on retry"]
+        A6["canonical topic only\nlegacy publish path removed"]
+        A7["PaymentCancelled topic subscribed\naligned with Debezium routing"]
+        A8["3-broker cluster\nhigh availability secured"]
+    end
+
+    subgraph MON["🔵 Newly Added"]
+        M1["PaymentOutboxMonitor\nevery 5 min PENDING event watch\nDebezium failure early detection"]
+    end
+
+    B1 --> A1
+    B2 --> A2
+    B3 --> A3
+    B4 --> A4
+    B5 --> A5
+    B6 --> A6
+    B7 --> A7
+    B8 --> A8

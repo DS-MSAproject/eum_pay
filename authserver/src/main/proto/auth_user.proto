@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.eum.grpc.auth";
+option java_outer_classname = "AuthUserProto";
+
+package auth;
+
+service AuthUserService {
+  rpc GetUserById (UserByIdRequest) returns (UserInfoResponse);
+}
+
+message UserByIdRequest {
+  int64 user_id = 1;
+}
+
+message UserInfoResponse {
+  int64 user_id = 1;
+  string username = 2;
+  string email = 3;
+  string name = 4;
+  string role = 5;
+  string provider = 6;
+  bool email_verified = 7;
+}

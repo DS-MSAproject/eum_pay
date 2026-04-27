@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="SERVICE_NAME" value="ragserver" />
+    <property name="RAG_LOG_PATH" value="${LOG_PATH}/rag" />
+
+    <include resource="base-logback.xml"/>
+
+    <appender name="RAG_PIPELINE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${RAG_LOG_PATH}/pipeline.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${RAG_LOG_PATH}/archived/pipeline.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId:-},%X{spanId:-}] [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="RAG_RETRIEVAL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${RAG_LOG_PATH}/retrieval.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${RAG_LOG_PATH}/archived/retrieval.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId:-},%X{spanId:-}] [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="RAG_CHAT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${RAG_LOG_PATH}/chat.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${RAG_LOG_PATH}/archived/chat.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId:-},%X{spanId:-}] [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="RAG_INFRA_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${RAG_LOG_PATH}/infra.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${RAG_LOG_PATH}/archived/infra.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId:-},%X{spanId:-}] [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="RAG_ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${RAG_LOG_PATH}/error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${RAG_LOG_PATH}/archived/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId:-},%X{spanId:-}] [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 문서 처리 파이프라인 추적 -->
+    <logger name="com.eum.rag.document.service.DocumentCommandService" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_PIPELINE_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.document.service.async.DocumentAsyncPipelineHandler" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_PIPELINE_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.document.service.DocumentIndexingService" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_PIPELINE_FILE" />
+    </logger>
+
+    <!-- 검색/재순위 추적 -->
+    <logger name="com.eum.rag.retrieval.service.HybridSearchService" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_RETRIEVAL_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.retrieval.service.RrfRankFusionService" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_RETRIEVAL_FILE" />
+    </logger>
+
+    <!-- 대화/LLM 추적 -->
+    <logger name="com.eum.rag.chat.service.ChatService" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_CHAT_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.llm.client.GeminiChatClient" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_CHAT_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.embedding.client.GeminiEmbeddingClient" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_PIPELINE_FILE" />
+    </logger>
+
+    <!-- 인프라/회복력 추적 -->
+    <logger name="com.eum.rag.common.health.RagInfraHealthIndicator" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_INFRA_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.common.resilience.GeminiResilienceExecutor" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_INFRA_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.infra.elasticsearch.repository.RagChunkSearchRepository" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_RETRIEVAL_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.chat.repository.RedisChatSessionRepository" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_CHAT_FILE" />
+        <appender-ref ref="RAG_INFRA_FILE" />
+    </logger>
+
+    <!-- 예외 집중 추적 -->
+    <logger name="com.eum.rag.common.exception.GlobalExceptionHandler" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_ERROR_FILE" />
+    </logger>
+
+    <logger name="com.eum.rag.common.async.RagAsyncExceptionHandler" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_ERROR_FILE" />
+    </logger>
+
+    <!-- 외부/인프라 로그 노이즈 제어 -->
+    <logger name="org.springframework.data.elasticsearch" level="WARN" />
+    <logger name="org.elasticsearch.client" level="WARN" />
+    <logger name="org.springframework.data.redis" level="WARN" />
+    <logger name="reactor.netty.http.client" level="WARN" />
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RAG_ERROR_FILE" />
+    </root>
+</configuration>
