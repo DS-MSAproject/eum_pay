@@ -100,10 +100,10 @@ if [ -f "$AWS_ENV_PATH" ]; then
     # 파일에서 값 읽기 (변수명=값 형태 가정)
     # 예: ACCESS_KEY=ABC...
     #     SECRET_KEY=XYZ...
-    ACCESS_KEY=$(grep "ACCESS_KEY" "$AWS_ENV_PATH" | cut -d'=' -f2 | tr -d '\n\r ')
-    SECRET_KEY=$(grep "SECRET_KEY" "$AWS_ENV_PATH" | cut -d'=' -f2 | tr -d '\n\r ')
-    AWS_REGION=$(grep "REGION" "$AWS_ENV_PATH" | cut -d'=' -f2 | tr -d '\n\r ')
-    S3_BUCKET=$(grep "BUCKET" "$AWS_ENV_PATH" | cut -d'=' -f2 | tr -d '\n\r ')
+    ACCESS_KEY=$(grep "^AWS_ACCESS_KEY=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
+    SECRET_KEY=$(grep "^AWS_SECRET_KEY=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
+    AWS_REGION=$(grep "^AWS_REGION=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
+    S3_BUCKET=$(grep "^S3_BUCKET=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
     CDN_ENABLED=$(grep "^CDN_ENABLED=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
     CDN_DOMAIN=$(grep "^CDN_DOMAIN=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
 

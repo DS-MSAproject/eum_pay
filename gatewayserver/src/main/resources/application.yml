@@ -84,9 +84,10 @@ spring:
             - id: order-service
               uri: lb://DSEUM-ORDER
               predicates:
-                - Path=/api/v1/orders/**
+                - Path=/api/v1/orders, /api/v1/orders/**
               filters:
-                - RewritePath=/api/v1/orders/?(?<segment>.*), /orders/${segment}
+                - RewritePath=/api/v1/orders$, /orders
+                - RewritePath=/api/v1/orders/(?<segment>.*), /orders/${segment}
                 - name: RequestRateLimiter
                   args:
                     redis-rate-limiter.replenishRate: 10
