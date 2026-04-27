@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ReviewSearchService {
 
-    private static final int DEFAULT_SIZE = 5;
+    private static final int DEFAULT_SIZE = 3;
     private static final int MAX_MEDIA_COUNT = 5;
     private static final String MEDIA_URL_DELIMITER = "\\|";
 

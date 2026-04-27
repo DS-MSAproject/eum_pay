@@ -11,6 +11,12 @@
 
 ## 2) API 상세
 
+헤더 규칙:
+- `GET /api/v1/reviews/{publicId}`: 추가 헤더 없음
+- `POST /api/v1/reviews`: `X-User-Id` 필수
+- `PUT /api/v1/reviews/{publicId}`: `X-User-Id` 필수
+- `DELETE /api/v1/reviews/{publicId}`: `X-User-Id` 필수
+
 ### 2.1 리뷰 상세 조회
 
 - Method: `GET`
@@ -147,7 +153,7 @@
 
 주요 상태코드:
 - `400 Bad Request`: 유효성 실패, 잘못된 multipart/data 형식
-- `401 Unauthorized`: 토큰 형식 오류, `X-User-Id` 누락/오류
+- `401 Unauthorized`: `X-User-Id` 누락/오류 또는 작성자 권한 불일치
 - `404 Not Found`: 리뷰 없음
 - `409 Conflict`: 이미 해당 상품에 리뷰 작성함
 - `413 Payload Too Large`: 파일 용량 초과(50MB 초과)
