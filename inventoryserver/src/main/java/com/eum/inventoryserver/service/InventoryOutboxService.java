@@ -1,5 +1,6 @@
 package com.eum.inventoryserver.service;
 
+import com.eum.common.correlation.CorrelationIdResolver;
 import com.eum.inventoryserver.outbox.InventoryOutbox;
 import com.eum.inventoryserver.repository.InventoryOutboxRepository;
 import com.eum.inventoryserver.message.inventory.InventoryDeductionResult;
@@ -42,6 +43,7 @@ public class InventoryOutboxService {
     @Transactional
     public void enqueueReservationResult(ProductReservationResult event) {
         try {
+            event.setCorrelationId(CorrelationIdResolver.resolveOrGenerate(event.getCorrelationId()));
             String payload = objectMapper.writeValueAsString(event);
             String eventType = event.isSuccess() ? INVENTORY_RESERVED : INVENTORY_RESERVATION_FAILED;
             saveOrderOutbox(event.getOrderId(), eventType, eventType, payload);
@@ -59,7 +61,7 @@ public class InventoryOutboxService {
                 .orderId(event.getOrderId())
                 .userId(event.getUserId())
                 .amount(event.paymentAmount())
-                .correlationId(event.getCorrelationId())
+                .correlationId(CorrelationIdResolver.resolveOrGenerate(event.getCorrelationId()))
                 .causationId(event.processedEventId())
                 .occurredAt(LocalDateTime.now())
                 .producer(PRODUCER)
@@ -77,6 +79,7 @@ public class InventoryOutboxService {
     @Transactional
     public void enqueueReleaseResult(InventoryReleaseResult event) {
         try {
+            event.setCorrelationId(CorrelationIdResolver.resolveOrGenerate(event.getCorrelationId()));
             String payload = objectMapper.writeValueAsString(event);
             String eventType = event.isSuccess() ? INVENTORY_RELEASED : INVENTORY_RELEASE_FAILED;
             saveOrderOutbox(event.getOrderId(), eventType, eventType, payload);
@@ -88,6 +91,7 @@ public class InventoryOutboxService {
     @Transactional
     public void enqueueDeductionResult(InventoryDeductionResult event) {
         try {
+            event.setCorrelationId(CorrelationIdResolver.resolveOrGenerate(event.getCorrelationId()));
             String payload = objectMapper.writeValueAsString(event);
             String eventType = event.isSuccess() ? INVENTORY_DEDUCTED : INVENTORY_DEDUCTION_FAILED;
             saveOrderOutbox(event.getOrderId(), eventType, eventType, payload);

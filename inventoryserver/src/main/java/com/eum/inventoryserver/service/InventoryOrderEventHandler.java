@@ -1,5 +1,7 @@
 package com.eum.inventoryserver.service;
 
+import com.eum.common.correlation.Correlated;
+import com.eum.common.correlation.CorrelationIdSource;
 import com.eum.inventoryserver.idempotency.InventoryProcessedEvent;
 import com.eum.inventoryserver.message.inventory.InventoryDeductionResult;
 import com.eum.inventoryserver.message.inventory.InventoryReleaseResult;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Correlated
 public class InventoryOrderEventHandler {
 
     private static final String PAYMENT_COMPLETED_STATUS = "PAYCOMPLETE";
@@ -35,7 +38,7 @@ public class InventoryOrderEventHandler {
     private final InventoryProcessedEventRepository processedEventRepository;
 
     @Transactional
-    public void handleOrderCheckedOut(OrderCheckedOutEvent event) {
+    public void handleOrderCheckedOut(@CorrelationIdSource OrderCheckedOutEvent event) {
         String eventId = event.processedEventId();
         if (processedEventRepository.existsByEventId(eventId)) {
             log.info("중복 주문 재고 예약 이벤트 무시: {}", eventId);
@@ -45,6 +48,7 @@ public class InventoryOrderEventHandler {
         // reserveOrderStock은 비즈니스 실패(재고 부족 등)를 예외가 아닌 결과 객체로 반환
         // → 인프라 장애만 예외로 전파되어 TX 롤백 후 Kafka 재처리
         ProductReservationResult result = inventoryService.reserveOrderStock(event);
+        result.setCorrelationId(event.getCorrelationId());
         inventoryOutboxService.enqueueReservationResult(result);
         if (result.isSuccess()) {
             inventoryOutboxService.enqueuePaymentRequested(event);
@@ -53,7 +57,7 @@ public class InventoryOrderEventHandler {
     }
 
     @Transactional
-    public void handlePaymentCompletedTopic(PaymentStatusEvent event) {
+    public void handlePaymentCompletedTopic(@CorrelationIdSource PaymentStatusEvent event) {
         event.setPaymentStatus(PAYMENT_COMPLETED_STATUS);
         String eventId = canonicalPaymentEventId(event.getOrderId(), PAYMENT_COMPLETED_STATUS);
         if (processedEventRepository.existsByEventId(eventId)) {
@@ -62,12 +66,13 @@ public class InventoryOrderEventHandler {
         }
 
         InventoryDeductionResult result = inventoryService.tryConfirmReservedStock(event.getOrderId());
+        result.setCorrelationId(event.getCorrelationId());
         inventoryOutboxService.enqueueDeductionResult(result);
         markProcessed(eventId, "PAYMENT_COMPLETED");
     }
 
     @Transactional
-    public void handlePaymentFailedTopic(PaymentStatusEvent event) {
+    public void handlePaymentFailedTopic(@CorrelationIdSource PaymentStatusEvent event) {
         event.setPaymentStatus(PAYMENT_FAILED_STATUS);
         String eventId = canonicalPaymentEventId(event.getOrderId(), PAYMENT_FAILED_STATUS);
         if (processedEventRepository.existsByEventId(eventId)) {
@@ -78,6 +83,7 @@ public class InventoryOrderEventHandler {
         ProductRestoreResult result = inventoryService.releaseReservedStock(event.getOrderId(), "PAYMENT_FAILED");
         inventoryOutboxService.enqueueReleaseResult(InventoryReleaseResult.builder()
                 .orderId(result.getOrderId())
+                .correlationId(event.getCorrelationId())
                 .success(result.isSuccess())
                 .reason(result.getReason())
                 .build());
@@ -85,7 +91,7 @@ public class InventoryOrderEventHandler {
     }
 
     @Transactional
-    public void handlePaymentCancelStatus(PaymentCancelStatusEvent event) {
+    public void handlePaymentCancelStatus(@CorrelationIdSource PaymentCancelStatusEvent event) {
         String eventId = event.processedEventId();
         if (processedEventRepository.existsByEventId(eventId)) {
             log.info("중복 결제 취소 상태 이벤트 무시: {}", eventId);
@@ -102,6 +108,7 @@ public class InventoryOrderEventHandler {
         ProductRestoreResult result = inventoryService.releaseReservedStock(event.getOrderId(), "PAYMENT_CANCELLED");
         inventoryOutboxService.enqueueReleaseResult(InventoryReleaseResult.builder()
                 .orderId(result.getOrderId())
+                .correlationId(event.getCorrelationId())
                 .success(result.isSuccess())
                 .reason(result.getReason())
                 .build());

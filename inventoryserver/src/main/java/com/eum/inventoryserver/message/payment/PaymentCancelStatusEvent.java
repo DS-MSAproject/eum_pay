@@ -28,6 +28,8 @@ public class PaymentCancelStatusEvent {
     private Integer amount;
     private Integer remainingBalance;
     private String status;
+    @JsonAlias({"correlation_id", "correlationId"})
+    private String correlationId;
 
     public String processedEventId() {
         return eventId != null ? eventId : "PAYMENT_CANCEL_STATUS:" + orderId + ":" + status + ":" + cancelAmount;

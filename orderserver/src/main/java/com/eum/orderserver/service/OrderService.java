@@ -1,5 +1,7 @@
 package com.eum.orderserver.service;
 
+import com.eum.common.correlation.Correlated;
+import com.eum.common.correlation.CorrelationIdSource;
 import com.eum.orderserver.client.ProductCheckoutClient;
 import com.eum.orderserver.domain.OrderDetails;
 import com.eum.orderserver.domain.OrderState;
@@ -40,8 +42,9 @@ public class OrderService {
     private final OrderOutboxService outboxService;
     private final ProductCheckoutClient productCheckoutClient;
 
+    @Correlated
     @Transactional
-    public Orders register(OrderRequest request, Long userId) {
+    public Orders register(@CorrelationIdSource String correlationId, OrderRequest request, Long userId) {
         validateOrderRequest(request);
 
         CheckoutValidationResponse productValidation = validateProducts(request);
@@ -224,8 +227,9 @@ public class OrderService {
         log.warn("{}번 주문 재고 예약 해제 실패: {}", event.getOrderId(), event.getReason());
     }
 
+    @Correlated
     @Transactional
-    public void requestCancel(Long orderId, String reason) {
+    public void requestCancel(@CorrelationIdSource String correlationId, Long orderId, String reason) {
         Orders order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문이 존재하지 않습니다. ID: " + orderId));
 

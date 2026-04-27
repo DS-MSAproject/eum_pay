@@ -43,6 +43,9 @@ public class PaymentOrderEvent {
     @JsonAlias({"failed_at"})
     private LocalDateTime failedAt;
 
+    @JsonAlias({"correlation_id", "correlationId"})
+    private String correlationId;
+
     private String reason;
 
     public String getFailureReason() {

@@ -1,5 +1,6 @@
 package com.eum.orderserver.controller;
 
+import com.eum.common.correlation.CorrelationConstants;
 import com.eum.orderserver.domain.OrderState;
 import com.eum.orderserver.domain.Orders;
 import com.eum.orderserver.dto.OrderDetailResponse;
@@ -37,11 +38,12 @@ public class OrdersController {
     @PostMapping("/get")
     public ResponseEntity<?> order(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = CorrelationConstants.CORRELATION_HEADER, required = false) String correlationId,
             @Valid @RequestBody OrderRequest orderRequest) {
         log.info("주문 생성 요청 수신: 유저 ID {}", userId);
 
         try {
-            Orders savedOrder = orderService.register(orderRequest, userId);
+            Orders savedOrder = orderService.register(correlationId, orderRequest, userId);
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(savedOrder.getOrderId());
@@ -80,11 +82,13 @@ public class OrdersController {
     }
 
     @DeleteMapping("/{order_id}")
-    public ResponseEntity<?> orderCancel(@PathVariable("order_id") Long orderId) {
+    public ResponseEntity<?> orderCancel(
+            @PathVariable("order_id") Long orderId,
+            @RequestHeader(value = CorrelationConstants.CORRELATION_HEADER, required = false) String correlationId) {
         log.info("주문 취소 요청 수신: 주문 ID {}", orderId);
 
         try {
-            orderService.requestCancel(orderId, "사용자 요청");
+            orderService.requestCancel(correlationId, orderId, "사용자 요청");
 
 //            ResponseEntity.ok();
 

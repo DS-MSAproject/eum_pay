@@ -1,5 +1,6 @@
 package com.eum.paymentserver.service;
 
+import com.eum.common.correlation.Correlated;
 import com.eum.paymentserver.dto.PaymentRequestedMessage;
 import com.eum.paymentserver.dto.OrderCancelledMessage;
 import java.util.function.Consumer;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@Correlated
 public class PaymentEventConsumer {
 
     private final PaymentService paymentService;

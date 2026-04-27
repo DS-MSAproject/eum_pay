@@ -1,5 +1,6 @@
 package com.eum.paymentserver.controller;
 
+import com.eum.common.correlation.CorrelationConstants;
 import com.eum.paymentserver.dto.CancelPaymentRequest;
 import com.eum.paymentserver.dto.ConfirmPaymentRequest;
 import com.eum.paymentserver.dto.PaymentResponse;
@@ -40,28 +41,31 @@ public class PaymentController {
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<PreparePaymentResponse> prepare(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = CorrelationConstants.CORRELATION_HEADER, required = false) String correlationId,
             @Valid @RequestBody PreparePaymentRequest request
     ) {
-        return Mono.fromCallable(() -> paymentService.prepare(userId, request))
+        return Mono.fromCallable(() -> paymentService.prepare(correlationId, userId, request))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
     @PostMapping("/confirm")
     public Mono<PaymentResponse> confirm(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = CorrelationConstants.CORRELATION_HEADER, required = false) String correlationId,
             @Valid @RequestBody ConfirmPaymentRequest request
     ) {
-        return Mono.fromCallable(() -> paymentService.confirm(userId, request))
+        return Mono.fromCallable(() -> paymentService.confirm(correlationId, userId, request))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
     @PostMapping("/{paymentId}/cancel")
     public Mono<PaymentResponse> cancel(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = CorrelationConstants.CORRELATION_HEADER, required = false) String correlationId,
             @PathVariable String paymentId,
             @Valid @RequestBody CancelPaymentRequest request
     ) {
-        return Mono.fromCallable(() -> paymentService.cancel(userId, paymentId, request))
+        return Mono.fromCallable(() -> paymentService.cancel(correlationId, userId, paymentId, request))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 

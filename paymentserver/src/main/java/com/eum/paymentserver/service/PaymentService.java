@@ -1,5 +1,7 @@
 package com.eum.paymentserver.service;
 
+import com.eum.common.correlation.Correlated;
+import com.eum.common.correlation.CorrelationIdSource;
 import com.eum.paymentserver.client.TossPaymentsClient;
 import com.eum.paymentserver.domain.CancelReasonType;
 import com.eum.paymentserver.domain.Payment;
@@ -69,8 +71,9 @@ public class PaymentService {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
+    @Correlated
     @Transactional
-    public PreparePaymentResponse prepare(Long userId, PreparePaymentRequest request) {
+    public PreparePaymentResponse prepare(@CorrelationIdSource String correlationId, Long userId, PreparePaymentRequest request) {
         Payment payment = paymentRepository.findByOrderId(request.getOrderId())
                 .map(existing -> {
                     existing.refreshPrepareContext(request.getAmount(), request.getCurrency());
@@ -96,8 +99,9 @@ public class PaymentService {
                 .build();
     }
 
+    @Correlated
     @Transactional
-    public void prepareRequestedPayment(PaymentRequestedMessage message) {
+    public void prepareRequestedPayment(@CorrelationIdSource PaymentRequestedMessage message) {
         Payment payment = paymentRepository.findByOrderId(message.getOrderId())
                 .map(existing -> {
                     if (existing.getStatus() == PaymentState.APPROVED
@@ -122,7 +126,8 @@ public class PaymentService {
      * Phase 2 — Toss 승인 API 호출 (TX 없음)
      * Phase 3 — 결과 기록 + Outbox 적재 (단기 쓰기 TX, 원자적)
      */
-    public PaymentResponse confirm(Long userId, ConfirmPaymentRequest request) {
+    @Correlated
+    public PaymentResponse confirm(@CorrelationIdSource String correlationId, Long userId, ConfirmPaymentRequest request) {
         // Phase 1: 입력 검증 및 결제 조회
 
         log.info("PaymentService.confirm={}", request.getPaymentKey());
@@ -172,7 +177,7 @@ public class PaymentService {
                 paymentAttemptRepository.save(PaymentAttempt.of(
                         p, "CONFIRM", writeJson(tossRequest), writeJson(tossResponse), "SUCCESS"));
                 Payment persisted = paymentRepository.save(p);
-                paymentOutboxService.enqueueCompleted(persisted);
+                paymentOutboxService.enqueueCompleted(persisted, correlationId);
                 return persisted;
             }));
 
@@ -194,7 +199,7 @@ public class PaymentService {
                 paymentAttemptRepository.save(PaymentAttempt.of(
                         p, "CONFIRM", writeJson(tossRequest), ex.getResponseBodyAsString(), "FAILED"));
                 Payment persisted = paymentRepository.save(p);
-                paymentOutboxService.enqueueFailed(persisted);
+                paymentOutboxService.enqueueFailed(persisted, correlationId);
                 return persisted;
             }));
             paymentSseService.publishFailed(saved);
@@ -208,7 +213,7 @@ public class PaymentService {
                     paymentAttemptRepository.save(PaymentAttempt.of(
                             p, "CONFIRM", writeJson(tossRequest), "TIMEOUT", "TIMEOUT"));
                     Payment persisted = paymentRepository.save(p);
-                    paymentOutboxService.enqueueFailed(persisted);
+                    paymentOutboxService.enqueueFailed(persisted, correlationId);
                     return persisted;
                 }));
                 paymentSseService.publishFailed(saved);
@@ -219,7 +224,8 @@ public class PaymentService {
         }
     }
 
-    public PaymentResponse cancel(Long userId, String paymentId, CancelPaymentRequest request) {
+    @Correlated
+    public PaymentResponse cancel(@CorrelationIdSource String correlationId, Long userId, String paymentId, CancelPaymentRequest request) {
         Payment payment = Objects.requireNonNull(transactionTemplate.execute(status -> {
             Payment p = paymentRepository.findByPaymentId(paymentId)
                     .orElseThrow(() -> new IllegalArgumentException("결제 정보를 찾을 수 없습니다."));
@@ -228,10 +234,11 @@ public class PaymentService {
             }
             return p;
         }));
-        return cancelApprovedPayment(payment, request);
+        return cancelApprovedPayment(correlationId, payment, request);
     }
 
-    public void compensateOrderCancelled(OrderCancelledMessage message) {
+    @Correlated
+    public void compensateOrderCancelled(@CorrelationIdSource OrderCancelledMessage message) {
         Payment payment = transactionTemplate.execute(status ->
                 paymentRepository.findByOrderId(message.getOrderId()).orElse(null)
         );
@@ -246,13 +253,13 @@ public class PaymentService {
         request.setReason(resolveCancelReason(message.getReason()));
         request.setReasonType(CancelReasonType.ORDER_CANCELLATION);
         request.setCancelAmount(payment.getAmount());
-        cancelApprovedPayment(payment, request);
+        cancelApprovedPayment(message.getCorrelationId(), payment, request);
     }
 
     /**
      * Toss 결제 취소 흐름도 confirm과 동일하게 TX를 외부 API 호출 전후로 분리한다.
      */
-    private PaymentResponse cancelApprovedPayment(Payment payment, CancelPaymentRequest request) {
+    private PaymentResponse cancelApprovedPayment(String correlationId, Payment payment, CancelPaymentRequest request) {
         if (payment.getStatus() == PaymentState.CANCELED) {
             return toResponse(payment);
         }
@@ -277,7 +284,7 @@ public class PaymentService {
                         request.getCancelAmount(), tossResponse.getStatus(), extractCancelId(tossResponse)
                 ));
                 Payment saved = paymentRepository.save(p);
-                paymentOutboxService.enqueueCancelled(saved, request.getReason());
+                paymentOutboxService.enqueueCancelled(saved, request.getReason(), correlationId);
                 return toResponse(saved);
             }));
 

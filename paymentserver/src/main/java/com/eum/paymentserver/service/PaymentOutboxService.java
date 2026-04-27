@@ -1,5 +1,6 @@
 package com.eum.paymentserver.service;
 
+import com.eum.common.correlation.CorrelationIdResolver;
 import com.eum.paymentserver.domain.Payment;
 import com.eum.paymentserver.domain.PaymentOutboxEvent;
 import com.eum.paymentserver.repository.PaymentOutboxEventRepository;
@@ -27,13 +28,13 @@ public class PaymentOutboxService {
     }
 
     @Transactional
-    public void enqueueCompleted(Payment payment) {
-        save(payment, "PaymentCompleted", basePayload(payment, "PaymentCompleted"));
+    public void enqueueCompleted(Payment payment, String correlationId) {
+        save(payment, "PaymentCompleted", basePayload(payment, "PaymentCompleted", correlationId));
     }
 
     @Transactional
-    public void enqueueFailed(Payment payment) {
-        Map<String, Object> payload = basePayload(payment, "PaymentFailed");
+    public void enqueueFailed(Payment payment, String correlationId) {
+        Map<String, Object> payload = basePayload(payment, "PaymentFailed", correlationId);
         payload.put("failureCode", payment.getFailureCode());
         payload.put("failureMessage", payment.getFailureMessage());
         payload.put("reason", payment.getFailureMessage());
@@ -41,15 +42,15 @@ public class PaymentOutboxService {
     }
 
     @Transactional
-    public void enqueueCancelled(Payment payment, String reason) {
-        Map<String, Object> payload = basePayload(payment, "PaymentCancelled");
+    public void enqueueCancelled(Payment payment, String reason, String correlationId) {
+        Map<String, Object> payload = basePayload(payment, "PaymentCancelled", correlationId);
         payload.put("reason", reason);
         payload.put("cancelReason", reason);
         payload.put("canceledAt", payment.getCanceledAt() != null ? payment.getCanceledAt().toString() : null);
         save(payment, "PaymentCancelled", payload);
     }
 
-    private Map<String, Object> basePayload(Payment payment, String eventType) {
+    private Map<String, Object> basePayload(Payment payment, String eventType, String correlationId) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("eventId", UUID.randomUUID().toString());
         payload.put("eventType", eventType);
@@ -64,6 +65,7 @@ public class PaymentOutboxService {
         payload.put("status", payment.getStatus().name());
         payload.put("paymentStatus", resolvePaymentStatus(eventType));
         payload.put("method", payment.getMethod().name());
+        payload.put("correlationId", CorrelationIdResolver.resolveOrGenerate(correlationId));
         return payload;
     }
 

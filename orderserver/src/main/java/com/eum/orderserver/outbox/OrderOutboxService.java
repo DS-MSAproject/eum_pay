@@ -1,5 +1,6 @@
 package com.eum.orderserver.outbox;
 
+import com.eum.common.correlation.CorrelationIdResolver;
 import com.eum.orderserver.dto.product.CheckoutValidationResponse;
 import com.eum.orderserver.message.order.OrderCancelledEvent;
 import com.eum.orderserver.message.order.OrderCheckedOutEvent;
@@ -27,19 +28,22 @@ public class OrderOutboxService {
                                        String receiverPhone, String receiverAddr,
                                        Long amount, Long totalPrice, LocalDateTime capturedAt,
                                        List<CheckoutValidationResponse.Item> items) {
+        String correlationId = CorrelationIdResolver.resolveOrGenerate(null);
         enqueue(orderId, OutboxEventType.ORDER_CHECKED_OUT,
                 OrderCheckedOutEvent.of(orderId, userId, receiverName, receiverPhone, receiverAddr,
-                        amount, totalPrice, capturedAt, items));
+                        amount, totalPrice, capturedAt, items, correlationId));
     }
 
     public void enqueueOrderCompleted(Long orderId, Long userId, Long amount) {
+        String correlationId = CorrelationIdResolver.resolveOrGenerate(null);
         enqueue(orderId, OutboxEventType.ORDER_COMPLETED,
-                OrderCompletedEvent.of(orderId, userId, amount));
+                OrderCompletedEvent.of(orderId, userId, amount, correlationId));
     }
 
     public void enqueueOrderCancelled(Long orderId, Long userId, String reason) {
+        String correlationId = CorrelationIdResolver.resolveOrGenerate(null);
         enqueue(orderId, OutboxEventType.ORDER_CANCELLED,
-                OrderCancelledEvent.of(orderId, userId, reason));
+                OrderCancelledEvent.of(orderId, userId, reason, correlationId));
     }
 
     private void enqueue(Long orderId, OutboxEventType type, Object payload) {
