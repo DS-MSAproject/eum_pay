@@ -30,11 +30,13 @@ public class NoticeService {
 
     private final ReactiveElasticsearchOperations operations;
     private static final String NOTICE_DETAIL_URL_PREFIX = "/api/v1/notices/";
+    private static final int GENERAL_NOTICE_PAGE_SIZE = 10;
 
     public Mono<SearchPageResponse<NoticeResponse>> searchNotices(NoticeSearchCondition condition) {
         // 💡 [보정 1] NPE 방지: page와 size 변수를 상단에서 확실히 고정
         int safePage = (condition.page() == null) ? 0 : Math.max(condition.page(), 0);
-        int safeSize = (condition.size() == null || condition.size() <= 0) ? 12 : condition.size();
+        // 규약: size는 항상 "공지 제외 일반글 10건"으로 고정
+        int safeSize = GENERAL_NOTICE_PAGE_SIZE;
 
         Pageable pageable = PageRequest.of(safePage, safeSize);
 
@@ -70,9 +72,18 @@ public class NoticeService {
 
             List<NoticeResponse> combinedContent = new ArrayList<>();
             combinedContent.addAll(fixedNotices);
-            combinedContent.addAll(generalPage.getSearchHits().stream()
-                    .map(hit -> mapToResponse(hit.getContent()))
-                    .toList());
+
+            long generalTotal = generalPage.getTotalElements();
+            long startDisplayNo = generalTotal - ((long) safePage * safeSize);
+
+            List<NoticeResponse> numberedGeneralNotices = new ArrayList<>();
+            int rowIndex = 0;
+            for (var hit : generalPage.getSearchHits()) {
+                long displayNo = startDisplayNo - rowIndex;
+                numberedGeneralNotices.add(mapToResponse(hit.getContent(), displayNo > 0 ? displayNo : null));
+                rowIndex++;
+            }
+            combinedContent.addAll(numberedGeneralNotices);
 
             // 💡 [보정 2] 응답 객체 생성 시 null이 아닌 safePage, safeSize를 전달
             return SearchPageResponse.of(
@@ -122,6 +133,10 @@ public class NoticeService {
     }
 
     private NoticeResponse mapToResponse(NoticeDocument doc) {
+        return mapToResponse(doc, null);
+    }
+
+    private NoticeResponse mapToResponse(NoticeDocument doc, Long displayNo) {
         String formattedDate = "";
         if (hasText(doc.getCreatedAt())) {
             try {
@@ -135,12 +150,21 @@ public class NoticeService {
 
         return NoticeResponse.builder()
                 .id(doc.getId())
+                .displayNo(displayNo)
+                .displayLabel(resolveDisplayLabel(doc.getIsPinned(), displayNo))
                 .title(doc.getTitle())
                 .category(doc.getCategory())
                 .isPinned(doc.getIsPinned())
                 .noticeDetailUrl(NOTICE_DETAIL_URL_PREFIX + doc.getId())
                 .createdAt(formattedDate)
                 .build();
+    }
+
+    private String resolveDisplayLabel(Boolean isPinned, Long displayNo) {
+        if (Boolean.TRUE.equals(isPinned)) {
+            return "공지";
+        }
+        return displayNo == null ? null : String.valueOf(displayNo);
     }
 
     private String calculateFromDate(String range) {

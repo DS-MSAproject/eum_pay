@@ -38,6 +38,8 @@ ext {
 }
 
 dependencies {
+    implementation project(':common-core')
+
     //== Spring Web & JPA & AOP & Actuator ==//
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

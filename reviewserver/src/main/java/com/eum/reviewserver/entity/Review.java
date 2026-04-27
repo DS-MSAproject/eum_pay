@@ -1,5 +1,6 @@
 package com.eum.reviewserver.entity;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,6 +11,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -25,6 +27,9 @@ public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "public_id", unique = true)
+    private UUID publicId;
 
     @Column(name = "product_id", nullable = false)
     private Long productId;
@@ -80,6 +85,9 @@ public class Review {
 
     @PrePersist
     public void prePersist() {
+        if (publicId == null) {
+            publicId = UuidCreator.getTimeOrderedEpoch();
+        }
         if (likeCount == null) {
             likeCount = 0L;
         }
@@ -90,6 +98,14 @@ public class Review {
 
     public Long getId() {
         return id;
+    }
+
+    public UUID getPublicId() {
+        return publicId;
+    }
+
+    public void setPublicId(UUID publicId) {
+        this.publicId = publicId;
     }
 
     public Long getProductId() {

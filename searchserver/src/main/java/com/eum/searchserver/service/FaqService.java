@@ -30,10 +30,12 @@ public class FaqService {
     private final ReactiveElasticsearchOperations operations;
     private static final String FAQ_DETAIL_URL_PREFIX = "/api/v1/faq/";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yy/MM/dd");
+    private static final int GENERAL_FAQ_PAGE_SIZE = 10;
 
     public Mono<SearchPageResponse<FaqResponse>> searchFaqs(FaqSearchCondition condition) {
         int safePage = condition.page() == null ? 0 : Math.max(condition.page(), 0);
-        int safeSize = condition.size() == null || condition.size() <= 0 ? 12 : condition.size();
+        // 규약: size는 항상 "고정 FAQ 제외 일반 FAQ 10건"으로 고정
+        int safeSize = GENERAL_FAQ_PAGE_SIZE;
         Pageable pageable = PageRequest.of(safePage, safeSize);
 
         NativeQuery fixedQuery = NativeQuery.builder()

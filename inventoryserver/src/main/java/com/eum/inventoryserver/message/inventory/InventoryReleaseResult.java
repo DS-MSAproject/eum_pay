@@ -20,6 +20,7 @@ public class InventoryReleaseResult {
     @JsonProperty("order_id")
     private Long orderId;
 
+    private String correlationId;
     private boolean success;
     private String reason;
 }

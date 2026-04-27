@@ -23,6 +23,7 @@ public class OrderCancelledMessage {
     private Long userId;
 
     private String reason;
+    private String correlationId;
 
     private LocalDateTime occurredAt;
 

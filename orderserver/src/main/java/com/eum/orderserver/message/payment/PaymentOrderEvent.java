@@ -34,6 +34,9 @@ public class PaymentOrderEvent {
     @JsonAlias({"paid_amount", "paidAmount"})
     private Long paidAmount;
 
+    @JsonAlias({"correlation_id", "correlationId"})
+    private String correlationId;
+
     @JsonAlias({"failure_code"})
     private String failureCode;
 

@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ReviewDetailDto(
-        Long reviewId,
+        String publicId,
         List<ReviewMediaDto> reviewMedias,
         String mediaType,
         long likeCount,

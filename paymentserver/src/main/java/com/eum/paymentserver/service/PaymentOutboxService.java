@@ -57,6 +57,7 @@ public class PaymentOutboxService {
         payload.put("aggregateId", payment.getOrderId());
         payload.put("orderId", payment.getOrderId());
         payload.put("userId", payment.getUserId());
+        payload.put("correlationId", payment.getCorrelationId());
         payload.put("paymentId", payment.getPaymentId());
         payload.put("occurredAt", LocalDateTime.now().toString());
         payload.put("amount", payment.getAmount());

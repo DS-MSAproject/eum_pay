@@ -41,6 +41,9 @@ public class Payment {
     @Column(nullable = false)
     private Long userId;
 
+    @Column(length = 64)
+    private String correlationId;
+
     @Column(unique = true)
     private String paymentKey;  // toss 승인후 받은 key
 
@@ -93,6 +96,7 @@ public class Payment {
             String paymentId,
             Long orderId,
             Long userId,
+            String correlationId,
             PaymentProvider provider,
             Long amount,
             String currency,
@@ -102,6 +106,7 @@ public class Payment {
         this.paymentId = paymentId;
         this.orderId = orderId;
         this.userId = userId;
+        this.correlationId = correlationId;
         this.provider = provider;
         this.amount = amount;
         this.currency = currency;
@@ -113,6 +118,7 @@ public class Payment {
     public static Payment ready(
             Long orderId,
             Long userId,
+            String correlationId,
             Long amount,
             String currency
     ) {
@@ -120,6 +126,7 @@ public class Payment {
                 .paymentId("pay_" + UUID.randomUUID().toString().replace("-", ""))
                 .orderId(orderId)
                 .userId(userId)
+                .correlationId(correlationId)
                 .provider(PaymentProvider.TOSS)
                 .amount(amount)
                 .currency(currency == null || currency.isBlank() ? "KRW" : currency)
@@ -128,9 +135,12 @@ public class Payment {
                 .build();
     }
 
-    public void refreshPrepareContext(Long amount, String currency) {
+    public void refreshPrepareContext(Long amount, String currency, String correlationId) {
         this.amount = amount;
         this.currency = currency;
+        if (correlationId != null && !correlationId.isBlank()) {
+            this.correlationId = correlationId;
+        }
         if (this.status == PaymentState.FAILED || this.status == PaymentState.CANCEL_FAILED) {
             this.status = PaymentState.READY;
             this.failureCode = null;

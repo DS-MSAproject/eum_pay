@@ -1,5 +1,8 @@
 package com.eum.paymentserver.service;
 
+import com.eum.common.correlation.Correlated;
+import com.eum.common.correlation.CorrelationIdResolver;
+import com.eum.common.correlation.CorrelationIdSource;
 import com.eum.paymentserver.client.TossPaymentsClient;
 import com.eum.paymentserver.domain.CancelReasonType;
 import com.eum.paymentserver.domain.Payment;
@@ -37,6 +40,7 @@ import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
+@Correlated
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -70,14 +74,16 @@ public class PaymentService {
 
     @Transactional
     public PreparePaymentResponse prepare(Long userId, PreparePaymentRequest request) {
+        String correlationId = CorrelationIdResolver.resolveOrGenerate(null);
         Payment payment = paymentRepository.findByOrderId(request.getOrderId())
                 .map(existing -> {
-                    existing.refreshPrepareContext(request.getAmount(), request.getCurrency());
+                    existing.refreshPrepareContext(request.getAmount(), request.getCurrency(), correlationId);
                     return existing;
                 })
                 .orElseGet(() -> Payment.ready(
                         request.getOrderId(),
                         userId,
+                        correlationId,
                         request.getAmount(),
                         request.getCurrency()
                 ));
@@ -96,19 +102,21 @@ public class PaymentService {
     }
 
     @Transactional
-    public void prepareRequestedPayment(PaymentRequestedMessage message) {
+    public void prepareRequestedPayment(@CorrelationIdSource PaymentRequestedMessage message) {
+        String correlationId = CorrelationIdResolver.resolveOrGenerate(message.getCorrelationId());
         Payment payment = paymentRepository.findByOrderId(message.getOrderId())
                 .map(existing -> {
                     if (existing.getStatus() == PaymentState.APPROVED
                             || existing.getStatus() == PaymentState.CANCELED) {
                         return existing;
                     }
-                    existing.refreshPrepareContext(message.getAmount(), "KRW");
+                    existing.refreshPrepareContext(message.getAmount(), "KRW", correlationId);
                     return existing;
                 })
                 .orElseGet(() -> Payment.ready(
                         message.getOrderId(),
                         message.getUserId(),
+                        correlationId,
                         message.getAmount(),
                         "KRW"
                 ));
@@ -211,7 +219,7 @@ public class PaymentService {
         return cancelApprovedPayment(payment, request);
     }
 
-    public void compensateOrderCancelled(OrderCancelledMessage message) {
+    public void compensateOrderCancelled(@CorrelationIdSource OrderCancelledMessage message) {
         Payment payment = transactionTemplate.execute(status ->
                 paymentRepository.findByOrderId(message.getOrderId()).orElse(null)
         );

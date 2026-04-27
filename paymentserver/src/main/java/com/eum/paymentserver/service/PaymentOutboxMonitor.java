@@ -1,4 +1,4 @@
-package com.eum.paymentserver.Service;
+package com.eum.paymentserver.service;
 
 import com.eum.paymentserver.domain.OutboxEventStatus;
 import com.eum.paymentserver.domain.PaymentOutboxEvent;

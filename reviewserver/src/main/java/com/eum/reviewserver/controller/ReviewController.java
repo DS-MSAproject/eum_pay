@@ -7,13 +7,13 @@ import com.eum.reviewserver.dto.request.UpdateReviewRequest;
 import com.eum.reviewserver.dto.response.ReviewCreateResponse;
 import com.eum.reviewserver.dto.response.ReviewDeleteResponse;
 import com.eum.reviewserver.dto.response.ReviewDetailResponse;
-import com.eum.reviewserver.dto.response.ReviewListResponse;
 import com.eum.reviewserver.dto.response.ReviewUpdateResponse;
 import com.eum.reviewserver.service.ReviewService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/reviews")
-public class    ReviewController {
+public class ReviewController {
 
     private final ReviewService reviewService;
     private final ObjectMapper objectMapper;
@@ -42,26 +42,13 @@ public class    ReviewController {
         this.validator = validator;
     }
 
-    @GetMapping
-    public ResponseEntity<ReviewListResponse> getReviews(
-            @RequestHeader("Authorization") String authorization,
-            @RequestParam Long productId,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String sortType,
-            @RequestParam(required = false) String reviewType,
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "5") Integer size
-    ) {
-        return ResponseEntity.ok(reviewService.getReviews(authorization, productId, keyword, sortType, reviewType, page, size));
-    }
-
-    @GetMapping("/{reviewId}")
+    @GetMapping("/{publicId}")
     public ResponseEntity<ReviewDetailResponse> getReviewDetail(
             @RequestHeader("Authorization") String authorization,
-            @PathVariable Long reviewId,
+            @PathVariable UUID publicId,
             @RequestParam(required = false) Boolean isInterested
     ) {
-        return ResponseEntity.ok(reviewService.getReviewDetail(authorization, reviewId, isInterested));
+        return ResponseEntity.ok(reviewService.getReviewDetail(authorization, publicId, isInterested));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -76,26 +63,26 @@ public class    ReviewController {
         );
     }
 
-    @PutMapping(value = "/{reviewId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/{publicId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReviewUpdateResponse> updateReview(
             @RequestHeader("Authorization") String authorization,
             @RequestHeader("X-User-Id") Long userId,
-            @PathVariable Long reviewId,
+            @PathVariable UUID publicId,
             @RequestPart("data") String data,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
         return ResponseEntity.ok(
-                reviewService.updateReview(authorization, userId, reviewId, parseAndValidate(data, UpdateReviewRequest.class), files)
+                reviewService.updateReview(authorization, userId, publicId, parseAndValidate(data, UpdateReviewRequest.class), files)
         );
     }
 
-    @DeleteMapping("/{reviewId}")
+    @DeleteMapping("/{publicId}")
     public ResponseEntity<ReviewDeleteResponse> deleteReview(
             @RequestHeader("Authorization") String authorization,
             @RequestHeader("X-User-Id") Long userId,
-            @PathVariable Long reviewId
+            @PathVariable UUID publicId
     ) {
-        return ResponseEntity.ok(reviewService.deleteReview(authorization, userId, reviewId));
+        return ResponseEntity.ok(reviewService.deleteReview(authorization, userId, publicId));
     }
 
     private <T> T parseAndValidate(String rawData, Class<T> type) {

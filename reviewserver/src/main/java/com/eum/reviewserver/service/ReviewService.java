@@ -1,16 +1,13 @@
 package com.eum.reviewserver.service;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import com.eum.reviewserver.dto.request.CreateReviewRequest;
 import com.eum.reviewserver.dto.request.UpdateReviewRequest;
-import com.eum.reviewserver.dto.response.PageInfoDto;
-import com.eum.reviewserver.dto.response.ReviewBodyDto;
 import com.eum.reviewserver.dto.response.ReviewCreateDataDto;
 import com.eum.reviewserver.dto.response.ReviewCreateResponse;
 import com.eum.reviewserver.dto.response.ReviewDeleteResponse;
 import com.eum.reviewserver.dto.response.ReviewDetailDto;
 import com.eum.reviewserver.dto.response.ReviewDetailResponse;
-import com.eum.reviewserver.dto.response.ReviewHeaderDto;
-import com.eum.reviewserver.dto.response.ReviewListResponse;
 import com.eum.reviewserver.dto.response.ReviewMediaDto;
 import com.eum.reviewserver.dto.response.ReviewUpdateResponse;
 import com.eum.reviewserver.entity.ReviewMediaPayload;
@@ -24,10 +21,7 @@ import com.eum.s3.S3Component;
 import com.eum.s3.S3Directory;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,57 +46,13 @@ public class ReviewService {
         this.s3Component = s3Component;
     }
 
-    public ReviewListResponse getReviews(
-            String authorization,
-            Long productId,
-            String keyword,
-            String sortType,
-            String reviewType,
-            Integer page,
-            Integer size
-    ) {
-        validateToken(authorization);
-        if (productId == null) {
-            throw new IllegalArgumentException("productId is null");
-        }
-
-        int safePage = page == null ? 0 : Math.max(page, 0);
-        int safeSize = size == null ? 5 : Math.max(size, 1);
-        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Review> reviewPage = reviewRepository.findPageByCondition(productId, keyword, sortType, reviewType, pageable);
-        List<Review> allByProduct = reviewRepository.findAllByProductId(productId);
-
-        List<ReviewBodyDto> body = reviewPage.getContent().stream()
-                .map(review -> {
-                    List<String> mediaUrls = resolvePublicMediaUrls(review);
-                    List<ReviewMediaDto> mediaDtos = toMediaDtos(mediaUrls, review.getReviewMediaJson());
-                    return new ReviewBodyDto(
-                            review.getId(),
-                            mediaDtos,
-                            review.getLikeCount(),
-                            review.getWriterName(),
-                            review.getCreatedAt(),
-                            review.getContent(),
-                            review.getStar(),
-                            review.getMediaType(),
-                            REVIEW_API_PATH + "/" + review.getId()
-                    );
-                })
-                .toList();
-
-        return new ReviewListResponse(
-                "success",
-                buildHeader(allByProduct),
-                body,
-                PageInfoDto.from(reviewPage)
-        );
-    }
-
     @Transactional
-    public ReviewDetailResponse getReviewDetail(String authorization, Long reviewId, Boolean isInterested) {
+    public ReviewDetailResponse getReviewDetail(String authorization, UUID publicId, Boolean isInterested) {
         validateToken(authorization);
-        Review review = reviewRepository.findByIdAndDeletedAtIsNull(reviewId)
+        Review review = reviewRepository.findByPublicIdAndDeletedAtIsNull(publicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+
+        ensurePublicId(review);
 
         if (Boolean.TRUE.equals(isInterested)) {
             review.setLikeCount(review.getLikeCount() + 1);
@@ -151,7 +101,7 @@ public class ReviewService {
         return new ReviewCreateResponse(
                 "success",
                 new ReviewCreateDataDto(
-                        saved.getId(),
+                        ensurePublicId(saved).toString(),
                         "Review has been successfully created.",
                         "/profile/reviews"
                 )
@@ -162,14 +112,15 @@ public class ReviewService {
     public ReviewUpdateResponse updateReview(
             String authorization,
             Long writerId,
-            Long reviewId,
+            UUID publicId,
             UpdateReviewRequest request,
             List<MultipartFile> files
     ) {
         validateToken(authorization);
         validateUser(writerId);
-        Review review = reviewRepository.findByIdAndDeletedAtIsNull(reviewId)
+        Review review = reviewRepository.findByPublicIdAndDeletedAtIsNull(publicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+        ensurePublicId(review);
         validateOwner(review, writerId);
 
         List<MultipartFile> safeFiles = files == null ? List.of() : files;
@@ -196,12 +147,13 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewDeleteResponse deleteReview(String authorization, Long writerId, Long reviewId) {
+    public ReviewDeleteResponse deleteReview(String authorization, Long writerId, UUID publicId) {
         validateToken(authorization);
         validateUser(writerId);
 
-        Review review = reviewRepository.findByIdAndDeletedAtIsNull(reviewId)
+        Review review = reviewRepository.findByPublicIdAndDeletedAtIsNull(publicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+        ensurePublicId(review);
         validateOwner(review, writerId);
 
         review.markDeleted(writerId, DEFAULT_DELETE_REASON);
@@ -266,10 +218,11 @@ public class ReviewService {
     }
 
     private ReviewDetailDto toDetailDto(Review review) {
+        UUID publicId = ensurePublicId(review);
         List<String> mediaUrls = resolvePublicMediaUrls(review);
         List<ReviewMediaDto> mediaDtos = toMediaDtos(mediaUrls, review.getReviewMediaJson());
         return new ReviewDetailDto(
-                review.getId(),
+                publicId.toString(),
                 mediaDtos,
                 review.getMediaType(),
                 review.getLikeCount(),
@@ -280,38 +233,17 @@ public class ReviewService {
                 safeInt(review.getFreshnessScore()),
                 review.getContent(),
                 review.getCreatedAt(),
-                REVIEW_API_PATH + "/" + review.getId() + "/report"
+                REVIEW_API_PATH + "/" + publicId + "/report"
         );
     }
 
-    private ReviewHeaderDto buildHeader(List<Review> reviews) {
-        if (reviews == null || reviews.isEmpty()) {
-            return new ReviewHeaderDto(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    private UUID ensurePublicId(Review review) {
+        if (review.getPublicId() != null) {
+            return review.getPublicId();
         }
-
-        long total = reviews.size();
-        long star5 = reviews.stream().filter(r -> r.getStar() == 5).count();
-        long star4 = reviews.stream().filter(r -> r.getStar() == 4).count();
-        long star3 = reviews.stream().filter(r -> r.getStar() == 3).count();
-        long star2 = reviews.stream().filter(r -> r.getStar() == 2).count();
-        long star1 = reviews.stream().filter(r -> r.getStar() == 1).count();
-        long preferenceCount = reviews.stream().filter(r -> safeInt(r.getPreferenceScore()) >= 4).count();
-        long repurchaseCount = reviews.stream().filter(r -> safeInt(r.getRepurchaseScore()) >= 4).count();
-        long freshnessCount = reviews.stream().filter(r -> safeInt(r.getFreshnessScore()) >= 4).count();
-        double starAverage = reviews.stream().mapToInt(Review::getStar).average().orElse(0.0);
-
-        return new ReviewHeaderDto(
-                round(starAverage),
-                total,
-                ratio(star5, total),
-                ratio(star4, total),
-                ratio(star3, total),
-                ratio(star2, total),
-                ratio(star1, total),
-                ratio(preferenceCount, total),
-                ratio(repurchaseCount, total),
-                ratio(freshnessCount, total)
-        );
+        UUID generated = UuidCreator.getTimeOrderedEpoch();
+        review.setPublicId(generated);
+        return generated;
     }
 
     private String resolveMediaType(List<MultipartFile> files) {
@@ -382,10 +314,6 @@ public class ReviewService {
                 .toList();
     }
 
-    private List<ReviewMediaDto> toMediaDtos(List<String> mediaUrls) {
-        return toMediaDtos(mediaUrls, null);
-    }
-
     private List<ReviewMediaDto> toMediaDtos(List<String> mediaUrls, List<ReviewMediaPayload> mediaPayloads) {
         if (mediaPayloads != null && !mediaPayloads.isEmpty()) {
             return mediaPayloads.stream()
@@ -422,17 +350,6 @@ public class ReviewService {
             return "VIDEO";
         }
         return "IMAGE";
-    }
-
-    private double ratio(long value, long total) {
-        if (total == 0) {
-            return 0.0;
-        }
-        return round((value * 100.0) / total);
-    }
-
-    private double round(double value) {
-        return Math.round(value * 100.0) / 100.0;
     }
 
     private int safeInt(Integer value) {

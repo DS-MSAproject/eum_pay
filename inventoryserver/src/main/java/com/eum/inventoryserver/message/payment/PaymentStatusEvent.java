@@ -28,6 +28,9 @@ public class PaymentStatusEvent {
     @JsonAlias({"paymentstatus", "payment_status", "status"})
     private String paymentStatus;
 
+    @JsonAlias({"correlation_id", "correlationId"})
+    private String correlationId;
+
     public String processedEventId() {
         return eventId != null ? eventId : "PAYMENT_STATUS:" + orderId + ":" + paymentStatus;
     }

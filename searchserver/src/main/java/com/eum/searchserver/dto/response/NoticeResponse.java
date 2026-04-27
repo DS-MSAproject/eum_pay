@@ -6,6 +6,8 @@ import lombok.Builder;
 @Builder
 public record NoticeResponse(
         Long id,
+        Long displayNo,
+        String displayLabel,
         String category,
         String title,
         Boolean isPinned,

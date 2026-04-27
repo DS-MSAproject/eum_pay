@@ -110,13 +110,17 @@ if [ -f "$AWS_ENV_PATH" ]; then
     SECRET_KEY=$(grep "SECRET_KEY" "$AWS_ENV_PATH" | cut -d'=' -f2 | tr -d '\n\r ')
     AWS_REGION=$(grep "REGION" "$AWS_ENV_PATH" | cut -d'=' -f2 | tr -d '\n\r ')
     S3_BUCKET=$(grep "BUCKET" "$AWS_ENV_PATH" | cut -d'=' -f2 | tr -d '\n\r ')
+    CDN_ENABLED=$(grep "^CDN_ENABLED=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
+    CDN_DOMAIN=$(grep "^CDN_DOMAIN=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
 
     # 💡 [무결성 포인트] 모든 서버가 공통으로 참조하는 application 경로에 패치
     vault kv patch secret/application \
         cloud.aws.credentials.access-key="$ACCESS_KEY" \
         cloud.aws.credentials.secret-key="$SECRET_KEY" \
         cloud.aws.region.static="$AWS_REGION" \
-        cloud.aws.s3.bucket="$S3_BUCKET"
+        cloud.aws.s3.bucket="$S3_BUCKET" \
+        cloud.aws.cdn.enabled="${CDN_ENABLED:-false}" \
+        cloud.aws.cdn.domain="$CDN_DOMAIN"
 
     echo "==> [완료] AWS IAM 및 S3 설정 주입 성공!"
 

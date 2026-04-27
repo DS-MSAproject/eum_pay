@@ -22,6 +22,9 @@ public class InventoryReservationEvent {
     @JsonAlias({"orderId"})
     private Long orderId;
 
+    @JsonAlias({"correlation_id", "correlationId"})
+    private String correlationId;
+
     private boolean success;
     private String reason;
     private List<Item> items;

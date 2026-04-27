@@ -32,7 +32,7 @@ subprojects {
     }
 
     // 💡 [무결성 포인트] common-resources와 그 하위(s3 등)는 Jib 검사에서 제외!
-    if (project.path.startsWith(':common-resources')) {
+    if (project.path.startsWith(':common-resources') || project.name == 'common-core') {
         // Jib 태스크가 생성되는 것 자체를 막거나, 생겨도 아무것도 안 하게 만듭니다.
         tasks.matching { it.name.startsWith('jib') }.configureEach {
             enabled = false
@@ -83,18 +83,26 @@ subprojects {
         mustRunAfter 'clean'
     }
 
-    if (project.name != 's3') {
+    if (project.name != 's3' && project.name != 'common-core') {
         apply plugin: 'com.google.cloud.tools.jib'
     }
 
     // 💡 프로세스 리소스 작업 전에 복사가 선행되도록 배선 연결
     processResources.dependsOn 'copyCommonResources'
 
-    tasks.named('bootJar') {
-        enabled = true
-    }
-
-    tasks.named('jar') {
-        enabled = false
+    if (project.name == 'common-core') {
+        tasks.named('bootJar') {
+            enabled = false
+        }
+        tasks.named('jar') {
+            enabled = true
+        }
+    } else {
+        tasks.named('bootJar') {
+            enabled = true
+        }
+        tasks.named('jar') {
+            enabled = false
+        }
     }
 }

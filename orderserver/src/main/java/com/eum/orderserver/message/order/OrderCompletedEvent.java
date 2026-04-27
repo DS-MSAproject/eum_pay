@@ -1,5 +1,6 @@
 package com.eum.orderserver.message.order;
 
+import com.eum.common.correlation.CorrelationIdResolver;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,7 +36,7 @@ public class OrderCompletedEvent {
                 .orderId(orderId)
                 .userId(userId)
                 .amount(amount)
-                .correlationId(String.valueOf(orderId))
+                .correlationId(CorrelationIdResolver.resolveOrGenerate(null))
                 .causationId(eventId)
                 .occurredAt(LocalDateTime.now())
                 .producer("orderserver")
