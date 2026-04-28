@@ -21,6 +21,7 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.net.URLEncoder;
 import org.slf4j.MDC;
 import java.util.List;
 import java.util.Map;
@@ -151,6 +152,7 @@ public class JwtAuthenticationFilter implements WebFilter {
         String name   = jwtVerifier.getName(claims);
         String role   = jwtVerifier.getRole(claims);
         String displayName = (name != null && !name.isBlank()) ? name : email;
+        String encodedDisplayName = URLEncoder.encode(displayName, StandardCharsets.UTF_8);
 
         return redisTemplate.hasKey("blacklist:" + jti)
                 .flatMap(isBlacklisted -> {
@@ -165,8 +167,8 @@ public class JwtAuthenticationFilter implements WebFilter {
                             .request(r -> r
                                     .header("X-User-Id", userId)
                                     .header("X-User-Email", email)
-                                    .header("X-User-Name", displayName)
-                                    .header("X-Name", displayName)
+                                    .header("X-User-Name", encodedDisplayName)
+                                    .header("X-Name", encodedDisplayName)
                                     .header("X-User-Role", role)
                             )
                             .build();

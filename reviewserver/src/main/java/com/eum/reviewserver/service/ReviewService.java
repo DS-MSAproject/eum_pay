@@ -19,6 +19,8 @@ import com.eum.reviewserver.exception.UnauthorizedException;
 import com.eum.reviewserver.repository.ReviewRepository;
 import com.eum.s3.S3Component;
 import com.eum.s3.S3Directory;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -348,7 +350,7 @@ public class ReviewService {
 
     private String resolveWriterName(Long writerId, String writerNameHeader) {
         if (StringUtils.hasText(writerNameHeader)) {
-            return writerNameHeader.trim();
+            return URLDecoder.decode(writerNameHeader.trim(), StandardCharsets.UTF_8);
         }
         return "user-" + writerId;
     }
