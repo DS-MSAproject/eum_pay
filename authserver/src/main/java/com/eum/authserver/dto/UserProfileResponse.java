@@ -18,6 +18,7 @@ public class UserProfileResponse {
         private String userId;       // username
         private String name;
         private String email;
+        private String profileImgUrl;
         private String phoneNumber;
         private boolean smsAllowed;
         private boolean emailAllowed;
