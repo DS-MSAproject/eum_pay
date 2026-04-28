@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import com.eum.searchserver.domain.ProductBannerDocument;
 import com.eum.searchserver.domain.ProductDocument;
+import com.eum.searchserver.domain.ProductFallbackDocument;
 import com.eum.searchserver.domain.ProductOptionDocument;
 import com.eum.searchserver.domain.OrderSearchDocument;
 import com.eum.searchserver.domain.OrderDetailSearchDocument;
@@ -225,20 +226,23 @@ public class ProductService {
         return fetchCompletedOrders()
                 .flatMap(orders -> {
                     if (orders.isEmpty()) {
-                        return Mono.just(SearchPageResponse.of(List.of(), 0, safePage, safeSize));
+                        return buildFallbackBestsellerPage(safePage, safeSize);
                     }
                     Map<Long, OrderSearchDocument> orderByOrderId = orders.stream()
                             .filter(o -> o.getOrderId() != null)
                             .collect(Collectors.toMap(OrderSearchDocument::getOrderId, o -> o, (a, b) -> a));
 
                     if (orderByOrderId.isEmpty()) {
-                        return Mono.just(SearchPageResponse.of(List.of(), 0, safePage, safeSize));
+                        return buildFallbackBestsellerPage(safePage, safeSize);
                     }
 
                     return fetchOrderDetailsByOrderIds(new ArrayList<>(orderByOrderId.keySet()))
                             .flatMap(details -> buildHomeBestsellerFromAggregates(orderByOrderId, details, rankingFetchSize))
                             .map(home -> {
                                 List<HomeBestsellerProductResponse> ranked = home.data();
+                                if (ranked.isEmpty()) {
+                                    return SearchPageResponse.of(List.of(), 0, safePage, safeSize);
+                                }
                                 int start = Math.min(safePage * safeSize, ranked.size());
                                 int end = Math.min(start + safeSize, ranked.size());
 
@@ -273,7 +277,7 @@ public class ProductService {
         return fetchCompletedOrders()
                 .flatMap(orders -> {
                     if (orders.isEmpty()) {
-                        return Mono.just(emptyHomeBestsellerResponse(targetSize));
+                        return buildFallbackHomeBestsellerResponse(targetSize);
                     }
 
                     Map<Long, OrderSearchDocument> orderByOrderId = orders.stream()
@@ -281,11 +285,17 @@ public class ProductService {
                             .collect(Collectors.toMap(OrderSearchDocument::getOrderId, o -> o, (a, b) -> a));
 
                     if (orderByOrderId.isEmpty()) {
-                        return Mono.just(emptyHomeBestsellerResponse(targetSize));
+                        return buildFallbackHomeBestsellerResponse(targetSize);
                     }
 
                     return fetchOrderDetailsByOrderIds(new ArrayList<>(orderByOrderId.keySet()))
-                            .flatMap(details -> buildHomeBestsellerFromAggregates(orderByOrderId, details, targetSize));
+                            .flatMap(details -> buildHomeBestsellerFromAggregates(orderByOrderId, details, targetSize))
+                            .flatMap(response -> {
+                                if (response.data().isEmpty()) {
+                                    return buildFallbackHomeBestsellerResponse(targetSize);
+                                }
+                                return Mono.just(response);
+                            });
                 });
     }
 
@@ -407,7 +417,7 @@ public class ProductService {
             int targetSize
     ) {
         if (details == null || details.isEmpty()) {
-            return Mono.just(emptyHomeBestsellerResponse(targetSize));
+            return buildFallbackHomeBestsellerResponse(targetSize);
         }
 
         Map<Long, ProductAggregateCandidate> aggregates = new LinkedHashMap<>();
@@ -436,7 +446,7 @@ public class ProductService {
         }
 
         if (aggregates.isEmpty()) {
-            return Mono.just(emptyHomeBestsellerResponse(targetSize));
+            return buildFallbackHomeBestsellerResponse(targetSize);
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -591,6 +601,88 @@ public class ProductService {
                         )
                 )
         );
+    }
+
+    private Mono<SearchPageResponse<HomeBestsellerProductResponse>> buildFallbackHomeBestsellerResponse(int targetSize) {
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q.matchAll(ma -> ma))
+                .withSort(s -> s.field(f -> f.field("created_at").order(SortOrder.Desc)))
+                .withPageable(PageRequest.of(0, Math.max(targetSize, 1)))
+                .build();
+
+        return operations.search(query, ProductFallbackDocument.class)
+                .map(hit -> hit.getContent())
+                .filter(doc -> doc.getProductId() != null)
+                .take(targetSize)
+                .collectList()
+                .map(products -> {
+                    List<HomeBestsellerProductResponse> data = IntStream.range(0, products.size())
+                            .mapToObj(i -> {
+                                ProductFallbackDocument p = products.get(i);
+                                String productTitle = hasText(p.getProductName()) ? p.getProductName() : p.getTitle();
+                                return HomeBestsellerProductResponse.builder()
+                                        .rank(i + 1)
+                                        .id(p.getProductId())
+                                        .imageUrl(p.getImageUrl())
+                                        .productTitle(productTitle)
+                                        .price(p.getPrice())
+                                        .score(0.0)
+                                        .salesCount(0L)
+                                        .createdAt(formatEpochMillis(p.getCreatedAt()))
+                                        .productUrl("/products/" + p.getProductId())
+                                        .build();
+                            })
+                            .toList();
+
+                    return SearchPageResponse.of(
+                            data,
+                            data.size(),
+                            0,
+                            targetSize,
+                            Map.of(
+                                    "updatedAt", LocalDateTime.now().format(CREATED_AT_FORMATTER),
+                                    "fallback", "LATEST_PRODUCTS"
+                            )
+                    );
+                })
+                .switchIfEmpty(Mono.just(emptyHomeBestsellerResponse(targetSize)));
+    }
+
+    private String formatEpochMillis(Long epochMillis) {
+        if (epochMillis == null || epochMillis <= 0) {
+            return LocalDateTime.now().format(CREATED_AT_FORMATTER);
+        }
+        return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault())
+                .format(CREATED_AT_FORMATTER);
+    }
+
+    private Mono<SearchPageResponse<BestsellerProductResponse>> buildFallbackBestsellerPage(int page, int size) {
+        return buildFallbackHomeBestsellerResponse(Math.max((page + 1) * size, size))
+                .map(home -> {
+                    List<HomeBestsellerProductResponse> ranked = home.data();
+                    int start = Math.min(page * size, ranked.size());
+                    int end = Math.min(start + size, ranked.size());
+                    List<HomeBestsellerProductResponse> pageItems = ranked.subList(start, end);
+
+                    List<BestsellerProductResponse> data = IntStream.range(0, pageItems.size())
+                            .mapToObj(i -> {
+                                HomeBestsellerProductResponse item = pageItems.get(i);
+                                int rank = start + i + 1;
+                                String rankTag = rank <= 3 ? ("[판매 " + rank + "위]") : "";
+                                return BestsellerProductResponse.builder()
+                                        .id(item.id())
+                                        .imageUrl(item.imageUrl())
+                                        .productTitle(item.productTitle())
+                                        .price(item.price())
+                                        .salesRank(rank)
+                                        .rankTag(rankTag)
+                                        .productUrl(item.productUrl())
+                                        .build();
+                            })
+                            .toList();
+
+                    return SearchPageResponse.of(data, ranked.size(), page, size);
+                });
     }
 
     private Mono<ProductDocument> findProductById(Long productId) {
