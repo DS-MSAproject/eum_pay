@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class MarkdownStructuringService {
 
-    private static final Pattern ORDERED_TITLE = Pattern.compile("^(\\d+)([.)])\\s+.+");
+    private static final Pattern ORDERED_TITLE = Pattern.compile("^(?:\\d+[.)]\\s+.+|\\d+\\.\\d+(?:\\.\\d+){0,2}\\s+.+)$");
+    private static final Pattern KOREAN_ARTICLE_TITLE = Pattern.compile("^제\\d+조\\s*\\(.+\\)$");
+    private static final Pattern SECTION_MARKER = Pattern.compile("^={3,}\\s*.+\\s*={3,}$");
 
     public String toMarkdown(String cleanedText) {
         if (cleanedText == null || cleanedText.isBlank()) {
@@ -45,20 +47,48 @@ public class MarkdownStructuringService {
             return false;
         }
 
+        if (SECTION_MARKER.matcher(line).matches()) {
+            return true;
+        }
+
         if (ORDERED_TITLE.matcher(line).matches()) {
             return true;
         }
 
-        if (line.endsWith(":")) {
+        if (KOREAN_ARTICLE_TITLE.matcher(line).matches()) {
             return true;
         }
 
         String lowered = line.toLowerCase(Locale.ROOT);
-        if (lowered.startsWith("faq") || lowered.startsWith("q.") || lowered.startsWith("안내") || lowered.startsWith("공지")) {
+        if (lowered.startsWith("q.") || lowered.startsWith("안내 ")) {
             return true;
         }
 
-        return !line.contains(".") && !line.contains("?") && line.split("\\s+").length <= 10;
+        if (line.endsWith(":") && isSafeColonHeader(line, lowered)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean isSafeColonHeader(String line, String lowered) {
+        if (line.length() > 40) {
+            return false;
+        }
+        if (line.contains("http://") || line.contains("https://")) {
+            return false;
+        }
+        if (lowered.startsWith("summary:")
+                || lowered.startsWith("source:")
+                || lowered.startsWith("price:")
+                || lowered.startsWith("rating:")
+                || lowered.startsWith("description:")
+                || lowered.startsWith("generatedat:")
+                || lowered.startsWith("policynote:")
+                || lowered.startsWith("noticetitle:")) {
+            return false;
+        }
+        return line.split("\\s+").length <= 6;
     }
 
     private void flushParagraph(StringBuilder markdown, List<String> bufferedParagraph) {
