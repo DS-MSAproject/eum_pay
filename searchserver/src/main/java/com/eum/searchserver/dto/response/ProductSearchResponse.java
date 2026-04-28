@@ -11,6 +11,8 @@ public record ProductSearchResponse(
         Long id,                // 상품 고유 ID
         String imageUrl,        // 상품 대표 이미지 URL
         String productTitle,    // 상품명 (예: 오독오독 바삭 캥거루 120g)
+        String productInfo,     // 상품 텍스트 상세 정보(추후 정식 필드)
+        String content,         // 기존 content 기반 상세 설명(하위 호환)
 
         // 💰 가격 관련 필드
         Long originalPrice,  // 정가 (예: 47,700) -> UI에서 취소선 처리용

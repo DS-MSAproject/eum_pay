@@ -2,6 +2,7 @@ package com.eum.searchserver.controller;
 
 import com.eum.searchserver.dto.request.ReviewSearchCondition;
 import com.eum.searchserver.dto.response.ReviewHeaderResponse;
+import com.eum.searchserver.dto.response.ReviewHighlightsResponse;
 import com.eum.searchserver.dto.response.ReviewSearchResponse;
 import com.eum.searchserver.dto.response.SearchPageResponse;
 import com.eum.searchserver.service.ReviewSearchService;
@@ -26,5 +27,10 @@ public class ReviewSearchController {
     @GetMapping("/header")
     public Mono<ReviewHeaderResponse> reviewHeader(ReviewSearchCondition condition) {
         return reviewSearchService.getReviewHeader(condition);
+    }
+
+    @GetMapping("/best-photo")
+    public Mono<ReviewHighlightsResponse> bestPhotoHighlights() {
+        return reviewSearchService.getBestPhotoHighlights();
     }
 }

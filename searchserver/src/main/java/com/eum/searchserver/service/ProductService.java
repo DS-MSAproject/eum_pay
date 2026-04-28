@@ -5,6 +5,8 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import com.eum.searchserver.domain.ProductBannerDocument;
 import com.eum.searchserver.domain.ProductDocument;
 import com.eum.searchserver.domain.ProductOptionDocument;
+import com.eum.searchserver.domain.OrderSearchDocument;
+import com.eum.searchserver.domain.OrderDetailSearchDocument;
 import com.eum.searchserver.dto.request.ProductSearchCondition;
 import com.eum.searchserver.dto.response.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,10 +27,15 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.Comparator;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.springframework.util.StringUtils.hasText;
 
@@ -42,9 +49,15 @@ public class ProductService {
 
     private static final String RANKING_KEY = "ranking:products";
     private static final int PAGE_SIZE = 12; // 💡 명세대로 12개 고정
+    private static final int BESTSELLER_FIXED_SIZE = 6;
     private static final int HOME_BESTSELLER_DEFAULT_SIZE = 3;
-    private static final int HOME_BESTSELLER_MAX_SIZE = 20;
-    private static final int HOME_BESTSELLER_CANDIDATE_SIZE = 200;
+    private static final int HOME_BESTSELLER_FIXED_SIZE = 3;
+    private static final int HOME_BESTSELLER_ORDERS_CANDIDATE_SIZE = 10_000;
+    private static final int ORDER_DETAIL_TERMS_CHUNK_SIZE = 500;
+    private static final double HOME_WEIGHT_SALES = 0.45;
+    private static final double HOME_WEIGHT_REVENUE = 0.25;
+    private static final double HOME_WEIGHT_RECENCY = 0.20;
+    private static final double HOME_WEIGHT_BUYERS = 0.10;
     private static final int MAIN_BANNER_HERO_SIZE = 3;
     private static final int MAIN_BANNER_CANDIDATE_SIZE = 200;
     private static final int TASTE_PICK_SIZE = 3;
@@ -56,7 +69,6 @@ public class ProductService {
     private static final int TOGETHER_MAX_SIZE = 20;
     private static final int TOGETHER_CANDIDATE_SIZE = 200;
     private static final int SEARCH_CANDIDATE_SIZE = 500;
-    private static final double RECENCY_WEIGHT = 1.0;
     private static final double SIMILAR_CATEGORY_WEIGHT = 0.5;
     private static final double SIMILAR_PRICE_WEIGHT = 0.3;
     private static final double SIMILAR_DISCOUNT_WEIGHT = 0.1;
@@ -203,39 +215,52 @@ public class ProductService {
     }
 
     /**
-     * [보정] 베스트셀러 TOP 6 - Redis 키워드로 ES 실제 데이터 조회 (성능 위기 해결)
+     * 베스트셀러 목록 (페이지네이션)
+     * page/size 미지정 시 기본값 0/6
      */
-    public Mono<SearchPageResponse<BestsellerProductResponse>> getTop6Bestsellers() {
-        return redisTemplate.opsForZSet()
-                .reverseRangeWithScores(RANKING_KEY, Range.closed(0L, 5L))
-                .collectList()
-                .flatMap(tuples -> {
-                    if (tuples.isEmpty()) return Mono.just(SearchPageResponse.of(List.of(), 0, 0, 6));
+    public Mono<SearchPageResponse<BestsellerProductResponse>> getBestsellers(int page, int size) {
+        final int safePage = Math.max(page, 0);
+        final int safeSize = size > 0 ? size : BESTSELLER_FIXED_SIZE;
+        final int rankingFetchSize = HOME_BESTSELLER_ORDERS_CANDIDATE_SIZE;
+        return fetchCompletedOrders()
+                .flatMap(orders -> {
+                    if (orders.isEmpty()) {
+                        return Mono.just(SearchPageResponse.of(List.of(), 0, safePage, safeSize));
+                    }
+                    Map<Long, OrderSearchDocument> orderByOrderId = orders.stream()
+                            .filter(o -> o.getOrderId() != null)
+                            .collect(Collectors.toMap(OrderSearchDocument::getOrderId, o -> o, (a, b) -> a));
 
-                    // 💡 Redis에서 가져온 키워드 리스트 추출
-                    List<String> keywords = tuples.stream().map(t -> t.getValue()).toList();
+                    if (orderByOrderId.isEmpty()) {
+                        return Mono.just(SearchPageResponse.of(List.of(), 0, safePage, safeSize));
+                    }
 
-                    // 💡 [핵심] 키워드에 해당하는 실제 상품을 ES에서 termsQuery로 조회
-                    NativeQuery query = NativeQuery.builder()
-                            .withQuery(q -> q.terms(t -> t.field("title.keyword").terms(v -> v.value(keywords.stream().map(FieldValue::of).toList()))))
-                            .build();
+                    return fetchOrderDetailsByOrderIds(new ArrayList<>(orderByOrderId.keySet()))
+                            .flatMap(details -> buildHomeBestsellerFromAggregates(orderByOrderId, details, rankingFetchSize))
+                            .map(home -> {
+                                List<HomeBestsellerProductResponse> ranked = home.data();
+                                int start = Math.min(safePage * safeSize, ranked.size());
+                                int end = Math.min(start + safeSize, ranked.size());
 
-                    return operations.search(query, ProductDocument.class)
-                            .map(hit -> {
-                                ProductDocument doc = hit.getContent();
-                                // Redis 순위 정보를 매칭하기 위해 index 활용 가능하나, 여기서는 단순 변환
-                                return BestsellerProductResponse.builder()
-                                        .id(doc.getId())
-                                        .imageUrl(doc.getImageUrl())
-                                        .productTitle(resolveProductTitle(doc))
-                                        .price(doc.getPrice())
-                                        .salesRank(keywords.indexOf(resolveProductTitle(doc)) + 1)
-                                        .rankTag("[판매 " + (keywords.indexOf(resolveProductTitle(doc)) + 1) + "위]")
-                                        .productUrl("/products/" + doc.getId())
-                                        .build();
-                            })
-                            .collectList()
-                            .map(list -> SearchPageResponse.of(list, list.size(), 0, 6));
+                                List<HomeBestsellerProductResponse> pageItems = ranked.subList(start, end);
+                                List<BestsellerProductResponse> data = IntStream.range(0, pageItems.size())
+                                        .mapToObj(i -> {
+                                            HomeBestsellerProductResponse item = pageItems.get(i);
+                                            int rank = start + i + 1;
+                                            String rankTag = rank > 0 && rank <= 3 ? ("[판매 " + rank + "위]") : "";
+                                            return BestsellerProductResponse.builder()
+                                                    .id(item.id())
+                                                    .imageUrl(item.imageUrl())
+                                                    .productTitle(item.productTitle())
+                                                    .price(item.price())
+                                                    .salesRank(rank)
+                                                    .rankTag(rankTag)
+                                                    .productUrl(item.productUrl())
+                                                    .build();
+                                        })
+                                        .toList();
+                                return SearchPageResponse.of(data, home.totalElements(), safePage, safeSize);
+                            });
                 });
     }
 
@@ -244,18 +269,24 @@ public class ProductService {
      * 임시 랭킹 로직: 최신성 100%
      */
     public Mono<SearchPageResponse<HomeBestsellerProductResponse>> getHomeBestsellers(int size) {
-        int targetSize = normalizeSize(size);
+        final int targetSize = HOME_BESTSELLER_FIXED_SIZE;
+        return fetchCompletedOrders()
+                .flatMap(orders -> {
+                    if (orders.isEmpty()) {
+                        return Mono.just(emptyHomeBestsellerResponse(targetSize));
+                    }
 
-        NativeQuery query = NativeQuery.builder()
-                .withQuery(q -> q.matchAll(ma -> ma))
-                .withSort(s -> s.field(f -> f.field("created_at").order(SortOrder.Desc)))
-                .withPageable(PageRequest.of(0, HOME_BESTSELLER_CANDIDATE_SIZE))
-                .build();
+                    Map<Long, OrderSearchDocument> orderByOrderId = orders.stream()
+                            .filter(o -> o.getOrderId() != null)
+                            .collect(Collectors.toMap(OrderSearchDocument::getOrderId, o -> o, (a, b) -> a));
 
-        return operations.search(query, ProductDocument.class)
-                .map(hit -> hit.getContent())
-                .collectList()
-                .map(candidates -> buildHomeBestsellerResponse(candidates, targetSize));
+                    if (orderByOrderId.isEmpty()) {
+                        return Mono.just(emptyHomeBestsellerResponse(targetSize));
+                    }
+
+                    return fetchOrderDetailsByOrderIds(new ArrayList<>(orderByOrderId.keySet()))
+                            .flatMap(details -> buildHomeBestsellerFromAggregates(orderByOrderId, details, targetSize));
+                });
     }
 
     /**
@@ -370,57 +401,194 @@ public class ProductService {
                 });
     }
 
-    private SearchPageResponse<HomeBestsellerProductResponse> buildHomeBestsellerResponse(
-            List<ProductDocument> candidates,
+    private Mono<SearchPageResponse<HomeBestsellerProductResponse>> buildHomeBestsellerFromAggregates(
+            Map<Long, OrderSearchDocument> orderByOrderId,
+            List<OrderDetailSearchDocument> details,
             int targetSize
     ) {
-        if (candidates == null || candidates.isEmpty()) {
-            return SearchPageResponse.of(
-                    List.of(),
-                    0,
-                    0,
-                    targetSize,
-                    Map.of("updatedAt", LocalDateTime.now().format(CREATED_AT_FORMATTER))
+        if (details == null || details.isEmpty()) {
+            return Mono.just(emptyHomeBestsellerResponse(targetSize));
+        }
+
+        Map<Long, ProductAggregateCandidate> aggregates = new LinkedHashMap<>();
+        for (OrderDetailSearchDocument detail : details) {
+            if (detail == null || detail.getProductId() == null || detail.getOrderId() == null) {
+                continue;
+            }
+            OrderSearchDocument order = orderByOrderId.get(detail.getOrderId());
+            if (order == null) {
+                continue;
+            }
+
+            ProductAggregateCandidate candidate = aggregates.computeIfAbsent(
+                    detail.getProductId(), id -> new ProductAggregateCandidate(id)
             );
+            candidate.sales += safeLong(detail.getQuantity());
+            candidate.revenue += safeLong(detail.getTotalPrice());
+            if (order.getUserId() != null) {
+                candidate.buyers.add(order.getUserId());
+            }
+
+            LocalDateTime orderedAt = parseOrderTime(order.getTime());
+            if (orderedAt.isAfter(candidate.latestOrderAt)) {
+                candidate.latestOrderAt = orderedAt;
+            }
+        }
+
+        if (aggregates.isEmpty()) {
+            return Mono.just(emptyHomeBestsellerResponse(targetSize));
         }
 
         LocalDateTime now = LocalDateTime.now();
+        List<ProductAggregateCandidate> candidates = new ArrayList<>(aggregates.values());
 
-        List<ScoredProduct> ranked = candidates.stream()
-                .map(doc -> scoreProduct(doc, now))
-                .sorted((a, b) -> {
-                    int byScore = Double.compare(b.score(), a.score());
-                    if (byScore != 0) return byScore;
-                    return b.createdAt().compareTo(a.createdAt());
-                })
+        double minSales = candidates.stream().mapToDouble(c -> c.sales).min().orElse(0.0);
+        double maxSales = candidates.stream().mapToDouble(c -> c.sales).max().orElse(0.0);
+        double minRevenue = candidates.stream().mapToDouble(c -> c.revenue).min().orElse(0.0);
+        double maxRevenue = candidates.stream().mapToDouble(c -> c.revenue).max().orElse(0.0);
+        double minBuyers = candidates.stream().mapToDouble(c -> c.buyers.size()).min().orElse(0.0);
+        double maxBuyers = candidates.stream().mapToDouble(c -> c.buyers.size()).max().orElse(0.0);
+        double minRecency = candidates.stream().mapToDouble(c -> calculateRecencyNorm(c.latestOrderAt, now)).min().orElse(0.0);
+        double maxRecency = candidates.stream().mapToDouble(c -> calculateRecencyNorm(c.latestOrderAt, now)).max().orElse(0.0);
+
+        candidates.forEach(c -> {
+            double salesNorm = normalize(c.sales, minSales, maxSales);
+            double revenueNorm = normalize(c.revenue, minRevenue, maxRevenue);
+            double buyersNorm = normalize(c.buyers.size(), minBuyers, maxBuyers);
+            double recencyNorm = normalize(calculateRecencyNorm(c.latestOrderAt, now), minRecency, maxRecency);
+
+            c.score = (HOME_WEIGHT_SALES * salesNorm)
+                    + (HOME_WEIGHT_REVENUE * revenueNorm)
+                    + (HOME_WEIGHT_RECENCY * recencyNorm)
+                    + (HOME_WEIGHT_BUYERS * buyersNorm);
+        });
+
+        long totalCandidates = candidates.size();
+
+        List<ProductAggregateCandidate> top = candidates.stream()
+                .sorted(Comparator
+                        .comparingDouble(ProductAggregateCandidate::getScore).reversed()
+                        .thenComparingLong(ProductAggregateCandidate::getSales).reversed()
+                        .thenComparing(ProductAggregateCandidate::getLatestOrderAt).reversed())
                 .limit(targetSize)
                 .toList();
 
-        List<HomeBestsellerProductResponse> data = java.util.stream.IntStream.range(0, ranked.size())
-                .mapToObj(index -> {
-                    ScoredProduct p = ranked.get(index);
-                    return HomeBestsellerProductResponse.builder()
-                            .rank(index + 1)
-                            .id(p.doc().getId())
-                            .imageUrl(p.doc().getImageUrl())
-                            .productTitle(resolveProductTitle(p.doc()))
-                            .price(p.doc().getPrice())
-                            .score(round4(p.score()))
-                            .salesCount(p.salesCount())
-                            .createdAt(p.doc().getCreatedAt())
-                            .productUrl("/products/" + p.doc().getId())
-                            .build();
-                })
-                .toList();
+        List<Long> productIds = top.stream().map(ProductAggregateCandidate::getProductId).toList();
+        return fetchProductsByIds(productIds)
+                .map(productsById -> {
+                    List<HomeBestsellerProductResponse> data = new ArrayList<>();
+                    for (int i = 0; i < top.size(); i++) {
+                        ProductAggregateCandidate c = top.get(i);
+                        ProductDocument p = productsById.get(c.productId);
+                        if (p == null || p.getId() == null) {
+                            continue;
+                        }
+                        data.add(HomeBestsellerProductResponse.builder()
+                                .rank(i + 1)
+                                .id(p.getId())
+                                .imageUrl(p.getImageUrl())
+                                .productTitle(resolveProductTitle(p))
+                                .price(p.getPrice())
+                                .score(round4(c.score))
+                                .salesCount(c.sales)
+                                .createdAt(p.getCreatedAt())
+                                .productUrl("/products/" + p.getId())
+                                .build());
+                    }
+                    return SearchPageResponse.of(
+                            data,
+                            totalCandidates,
+                            0,
+                            targetSize,
+                            Map.of(
+                                    "updatedAt", now.format(CREATED_AT_FORMATTER),
+                                    "basis", "ORDER_COMPLETED",
+                                    "weights", Map.of(
+                                            "sales", HOME_WEIGHT_SALES,
+                                            "revenue", HOME_WEIGHT_REVENUE,
+                                            "recency", HOME_WEIGHT_RECENCY,
+                                            "buyers", HOME_WEIGHT_BUYERS
+                                    )
+                            )
+                    );
+                });
+    }
 
+
+    private Mono<List<OrderSearchDocument>> fetchCompletedOrders() {
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q.bool(b -> b
+                        .must(m -> m.match(mm -> mm.field("order_state").query("ORDER_COMPLETED")))
+                        .mustNot(mn -> mn.term(t -> t.field("delete_yn").value("Y")))
+                ))
+                .withPageable(PageRequest.of(0, HOME_BESTSELLER_ORDERS_CANDIDATE_SIZE))
+                .build();
+
+        return operations.search(query, OrderSearchDocument.class)
+                .map(hit -> hit.getContent())
+                .collectList()
+                .onErrorReturn(List.of());
+    }
+
+    private Mono<List<OrderDetailSearchDocument>> fetchOrderDetailsByOrderIds(List<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return Mono.just(List.of());
+        }
+
+        List<List<Long>> chunks = new ArrayList<>();
+        for (int i = 0; i < orderIds.size(); i += ORDER_DETAIL_TERMS_CHUNK_SIZE) {
+            chunks.add(orderIds.subList(i, Math.min(i + ORDER_DETAIL_TERMS_CHUNK_SIZE, orderIds.size())));
+        }
+
+        return Flux.fromIterable(chunks)
+                .concatMap(chunk -> {
+                    NativeQuery query = NativeQuery.builder()
+                            .withQuery(q -> q.terms(t -> t
+                                    .field("order_id")
+                                    .terms(v -> v.value(chunk.stream().map(FieldValue::of).toList()))
+                            ))
+                            .withPageable(PageRequest.of(0, HOME_BESTSELLER_ORDERS_CANDIDATE_SIZE))
+                            .build();
+                    return operations.search(query, OrderDetailSearchDocument.class).map(hit -> hit.getContent());
+                })
+                .collectList()
+                .map(ArrayList::new);
+    }
+
+    private Mono<Map<Long, ProductDocument>> fetchProductsByIds(List<Long> productIds) {
+        List<Long> distinctIds = productIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinctIds.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q.terms(t -> t
+                        .field("id")
+                        .terms(v -> v.value(distinctIds.stream().map(FieldValue::of).toList()))
+                ))
+                .withPageable(PageRequest.of(0, distinctIds.size()))
+                .build();
+
+        return operations.search(query, ProductDocument.class)
+                .map(hit -> hit.getContent())
+                .collectMap(ProductDocument::getId, p -> p);
+    }
+
+    private SearchPageResponse<HomeBestsellerProductResponse> emptyHomeBestsellerResponse(int targetSize) {
         return SearchPageResponse.of(
-                data,
-                data.size(),
+                List.of(),
+                0,
                 0,
                 targetSize,
                 Map.of(
-                        "updatedAt", now.format(CREATED_AT_FORMATTER),
-                        "weights", Map.of("recency", RECENCY_WEIGHT)
+                        "updatedAt", LocalDateTime.now().format(CREATED_AT_FORMATTER),
+                        "basis", "ORDER_COMPLETED",
+                        "weights", Map.of(
+                                "sales", HOME_WEIGHT_SALES,
+                                "revenue", HOME_WEIGHT_REVENUE,
+                                "recency", HOME_WEIGHT_RECENCY,
+                                "buyers", HOME_WEIGHT_BUYERS
+                        )
                 )
         );
     }
@@ -719,13 +887,16 @@ public class ProductService {
         return new TogetherScoredProduct(candidate, score, candidateCreatedAt);
     }
 
-    private ScoredProduct scoreProduct(ProductDocument doc, LocalDateTime now) {
-        LocalDateTime createdAt = parseCreatedAt(doc.getCreatedAt());
-        double recencyNorm = calculateRecencyNorm(createdAt, now);
-
-        long salesCount = (doc.getSalesCount() != null && doc.getSalesCount() > 0) ? doc.getSalesCount() : 0L;
-        double score = RECENCY_WEIGHT * recencyNorm;
-        return new ScoredProduct(doc, score, salesCount, createdAt);
+    private LocalDateTime parseOrderTime(Long rawMicros) {
+        if (rawMicros == null || rawMicros <= 0) {
+            return LocalDateTime.MIN;
+        }
+        try {
+            long epochMillis = rawMicros / 1000L;
+            return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+        } catch (Exception ignore) {
+            return LocalDateTime.MIN;
+        }
     }
 
     private LocalDateTime parseCreatedAt(String raw) {
@@ -811,9 +982,15 @@ public class ProductService {
         return Math.min(rate, 1.0);
     }
 
-    private int normalizeSize(int size) {
-        if (size <= 0) return HOME_BESTSELLER_DEFAULT_SIZE;
-        return Math.min(size, HOME_BESTSELLER_MAX_SIZE);
+    private double normalize(double value, double min, double max) {
+        if (max <= min) {
+            return max > 0 ? 1.0 : 0.0;
+        }
+        return (value - min) / (max - min);
+    }
+
+    private long safeLong(Long value) {
+        return value == null ? 0L : value;
     }
 
     private int normalizeSimilarSize(int size) {
@@ -861,12 +1038,33 @@ public class ProductService {
         return createdAt.isAfter(LocalDateTime.now().minusDays(7));
     }
 
-    private record ScoredProduct(
-            ProductDocument doc,
-            double score,
-            long salesCount,
-            LocalDateTime createdAt
-    ) {
+    private static class ProductAggregateCandidate {
+        private final Long productId;
+        private long sales;
+        private long revenue;
+        private final Set<Long> buyers = new HashSet<>();
+        private LocalDateTime latestOrderAt = LocalDateTime.MIN;
+        private double score;
+
+        private ProductAggregateCandidate(Long productId) {
+            this.productId = productId;
+        }
+
+        public Long getProductId() {
+            return productId;
+        }
+
+        public long getSales() {
+            return sales;
+        }
+
+        public LocalDateTime getLatestOrderAt() {
+            return latestOrderAt;
+        }
+
+        public double getScore() {
+            return score;
+        }
     }
 
     private record SimilarScoredProduct(
@@ -900,6 +1098,8 @@ public class ProductService {
                 .id(doc.getId())
                 .imageUrl(doc.getImageUrl())
                 .productTitle(resolveProductTitle(doc))
+                .productInfo(null)
+                .content(doc.getContent())
                 .originalPrice(doc.getOriginalPrice())
                 .price(doc.getPrice())
                 .discountRate(Math.round(discountRate * 100) / 100.0) // 소수점 2자리

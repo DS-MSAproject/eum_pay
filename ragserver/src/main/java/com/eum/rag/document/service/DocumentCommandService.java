@@ -50,6 +50,7 @@ public class DocumentCommandService {
                     category,
                     DocumentStatus.PENDING,
                     null,
+                    null,
                     "",
                     List.of(),
                     startedAt,

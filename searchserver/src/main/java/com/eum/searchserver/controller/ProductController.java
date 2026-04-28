@@ -55,8 +55,11 @@ public class ProductController {
      * 💡 베스트셀러 탭
      */
     @GetMapping("/bestseller")
-    public Mono<SearchPageResponse<BestsellerProductResponse>> getBestsellers() {
-        return productService.getTop6Bestsellers();
+    public Mono<SearchPageResponse<BestsellerProductResponse>> getBestsellers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size
+    ) {
+        return productService.getBestsellers(page, size);
     }
 
     /**

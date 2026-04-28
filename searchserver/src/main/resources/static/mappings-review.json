@@ -1,6 +1,7 @@
 {
   "properties": {
     "id": { "type": "long" },
+    "public_id": { "type": "keyword" },
     "product_id": { "type": "long" },
     "writer_name": {
       "type": "text",
