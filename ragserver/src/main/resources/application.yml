@@ -80,6 +80,9 @@ rag:
     max-sources: ${RAG_CHAT_MAX_SOURCES:3}
     rewrite-short-question-length: ${RAG_CHAT_REWRITE_SHORT_QUESTION_LENGTH:14}
     llm-temperature: ${RAG_CHAT_LLM_TEMPERATURE:0}
+  commerce:
+    search-base-url: ${RAG_COMMERCE_SEARCH_BASE_URL:http://searchserver:8087}
+    bestseller-size: ${RAG_COMMERCE_BESTSELLER_SIZE:3}
 
 resilience4j:
   circuitbreaker:

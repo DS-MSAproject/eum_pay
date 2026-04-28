@@ -131,6 +131,26 @@ ORDER_OUTBOX_CONF='{
   }
 }'
 
+ORDER_ANALYTICS_CONNECTOR_NAME="dseum-order-analytics-connector"
+ORDER_ANALYTICS_CONF='{
+  "name": "'$ORDER_ANALYTICS_CONNECTOR_NAME'",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "order-database",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "'$DB_PASSWORD'",
+    "database.dbname": "dseum_order",
+    "plugin.name": "pgoutput",
+    "topic.prefix": "orderdb",
+    "table.include.list": "public.orders,public.order_details",
+    "slot.name": "order_analytics_slot",
+    "publication.name": "order_analytics_publication",
+    "publication.autocreate.mode": "all_tables",
+    "snapshot.mode": "always"
+  }
+}'
+
 INVENTORY_OUTBOX_CONNECTOR_NAME="dseum-inventory-outbox-connector"
 INVENTORY_OUTBOX_CONF='{
   "name": "'$INVENTORY_OUTBOX_CONNECTOR_NAME'",
@@ -203,6 +223,7 @@ upsert_connector "$BOARD_NOTICE_CONNECTOR_NAME"   "$BOARD_NOTICE_CONF"
 upsert_connector "$BOARD_FAQ_CONNECTOR_NAME"      "$BOARD_FAQ_CONF"
 upsert_connector "$REVIEW_CONNECTOR_NAME"         "$REVIEW_CONF"
 upsert_connector "$ORDER_OUTBOX_CONNECTOR_NAME"   "$ORDER_OUTBOX_CONF"
+upsert_connector "$ORDER_ANALYTICS_CONNECTOR_NAME" "$ORDER_ANALYTICS_CONF"
 upsert_connector "$INVENTORY_OUTBOX_CONNECTOR_NAME" "$INVENTORY_OUTBOX_CONF"
 upsert_connector "$PAYMENT_OUTBOX_CONNECTOR_NAME" "$PAYMENT_OUTBOX_CONF"
 

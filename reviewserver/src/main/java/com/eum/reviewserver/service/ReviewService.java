@@ -8,15 +8,19 @@ import com.eum.reviewserver.dto.response.ReviewCreateResponse;
 import com.eum.reviewserver.dto.response.ReviewDeleteResponse;
 import com.eum.reviewserver.dto.response.ReviewDetailDto;
 import com.eum.reviewserver.dto.response.ReviewDetailResponse;
+import com.eum.reviewserver.dto.response.ReviewHelpfulResponse;
+import com.eum.reviewserver.dto.response.OrderItemHistoryDto;
 import com.eum.reviewserver.dto.response.ReviewMediaDto;
 import com.eum.reviewserver.dto.response.ReviewUpdateResponse;
 import com.eum.reviewserver.entity.ReviewMediaPayload;
+import com.eum.reviewserver.entity.ReviewHelpful;
 import com.eum.reviewserver.entity.Review;
 import com.eum.reviewserver.exception.ConflictException;
 import com.eum.reviewserver.exception.PayloadTooLargeException;
 import com.eum.reviewserver.exception.ResourceNotFoundException;
 import com.eum.reviewserver.exception.UnauthorizedException;
 import com.eum.reviewserver.repository.ReviewRepository;
+import com.eum.reviewserver.repository.ReviewHelpfulRepository;
 import com.eum.s3.S3Component;
 import com.eum.s3.S3Directory;
 import java.net.URLDecoder;
@@ -24,6 +28,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.Locale;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -31,6 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional(readOnly = true)
+@Slf4j
 public class ReviewService {
 
     private static final long MAX_FILE_BYTES = 50L * 1024 * 1024;
@@ -41,12 +48,18 @@ public class ReviewService {
     private static final String DEFAULT_DELETE_REASON = "USER_REQUEST";
 
     private final ReviewRepository reviewRepository;
+    private final ReviewHelpfulRepository reviewHelpfulRepository;
     private final S3Component s3Component;
+    private final OrderHistoryClient orderHistoryClient;
 
     public ReviewService(ReviewRepository reviewRepository,
-                         S3Component s3Component) {
+                         ReviewHelpfulRepository reviewHelpfulRepository,
+                         S3Component s3Component,
+                         OrderHistoryClient orderHistoryClient) {
         this.reviewRepository = reviewRepository;
+        this.reviewHelpfulRepository = reviewHelpfulRepository;
         this.s3Component = s3Component;
+        this.orderHistoryClient = orderHistoryClient;
     }
 
     @Transactional
@@ -71,6 +84,7 @@ public class ReviewService {
             List<MultipartFile> files
     ) {
         validateUser(writerId);
+        validateCompletedPurchase(writerId, request.productId());
         if (reviewRepository.existsByProductIdAndWriterId(request.productId(), writerId)) {
             throw new ConflictException("You have already reviewed this product");
         }
@@ -158,6 +172,31 @@ public class ReviewService {
         return new ReviewDeleteResponse("success", "Review has been deleted.");
     }
 
+    @Transactional
+    public ReviewHelpfulResponse markReviewHelpful(Long userId, UUID publicId) {
+        validateUser(userId);
+        Review review = reviewRepository.findByPublicIdAndDeletedAtIsNull(publicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+        UUID resolvedPublicId = ensurePublicId(review);
+
+        if (reviewHelpfulRepository.existsByReviewIdAndUserId(review.getId(), userId)) {
+            throw new ConflictException("Helpful already submitted by this user");
+        }
+
+        ReviewHelpful reviewHelpful = new ReviewHelpful();
+        reviewHelpful.setReviewId(review.getId());
+        reviewHelpful.setUserId(userId);
+        reviewHelpfulRepository.save(reviewHelpful);
+
+        review.setLikeCount(review.getLikeCount() + 1);
+        return new ReviewHelpfulResponse(
+                "success",
+                "Helpful has been updated.",
+                resolvedPublicId.toString(),
+                review.getLikeCount()
+        );
+    }
+
     private void validateUser(Long writerId) {
         if (writerId == null || writerId <= 0) {
             throw new UnauthorizedException("X-User-Id header is required");
@@ -168,6 +207,30 @@ public class ReviewService {
         if (!review.getWriterId().equals(writerId)) {
             throw new UnauthorizedException("Invalid token");
         }
+    }
+
+    private void validateCompletedPurchase(Long userId, Long productId) {
+        if (productId == null || productId <= 0) {
+            throw new IllegalArgumentException("productId is required");
+        }
+
+        List<OrderItemHistoryDto> histories = orderHistoryClient.getUserOrderHistory(userId);
+        boolean eligible = histories.stream()
+                .anyMatch(item ->
+                        item != null
+                                && productId.equals(item.productId())
+                                && "ORDER_COMPLETED".equalsIgnoreCase(normalize(item.orderState()))
+                );
+        log.info("review eligibility userId={}, productId={}, histories={}, eligible={}",
+                userId, productId, histories.size(), eligible);
+
+        if (!eligible) {
+            throw new IllegalArgumentException("Only users with completed purchases can write reviews");
+        }
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
     }
 
     private void validateFileSize(List<MultipartFile> files) {

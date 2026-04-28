@@ -7,6 +7,7 @@ import com.eum.reviewserver.dto.request.UpdateReviewRequest;
 import com.eum.reviewserver.dto.response.ReviewCreateResponse;
 import com.eum.reviewserver.dto.response.ReviewDeleteResponse;
 import com.eum.reviewserver.dto.response.ReviewDetailResponse;
+import com.eum.reviewserver.dto.response.ReviewHelpfulResponse;
 import com.eum.reviewserver.dto.response.ReviewUpdateResponse;
 import com.eum.reviewserver.service.ReviewService;
 import jakarta.validation.ConstraintViolation;
@@ -80,6 +81,14 @@ public class ReviewController {
             @PathVariable UUID publicId
     ) {
         return ResponseEntity.ok(reviewService.deleteReview(userId, publicId));
+    }
+
+    @PostMapping("/{publicId}/helpful")
+    public ResponseEntity<ReviewHelpfulResponse> markReviewHelpful(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable UUID publicId
+    ) {
+        return ResponseEntity.ok(reviewService.markReviewHelpful(userId, publicId));
     }
 
     private <T> T parseAndValidate(String rawData, Class<T> type) {

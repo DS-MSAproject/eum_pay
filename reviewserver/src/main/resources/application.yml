@@ -58,6 +58,10 @@ eureka:
     serviceUrl:
       defaultZone: http://eurekaserver:8070/eureka/
 
+order:
+  service:
+    base-url: ${ORDER_SERVICE_BASE_URL:http://dseumorders:8989}
+
 management:
   endpoints:
     web:

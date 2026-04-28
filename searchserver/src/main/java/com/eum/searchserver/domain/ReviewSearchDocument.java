@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -25,6 +24,9 @@ public class ReviewSearchDocument {
 
     @Id
     private Long id;
+
+    @Field(name = "public_id", type = FieldType.Keyword)
+    private String publicId;
 
     @Field(name = "product_id", type = FieldType.Long)
     private Long productId;
@@ -60,11 +62,11 @@ public class ReviewSearchDocument {
     @Field(name = "media_type", type = FieldType.Keyword)
     private String mediaType;
 
-    @Field(name = "created_at", type = FieldType.Date, format = DateFormat.date_optional_time)
-    private String createdAt;
+    @Field(name = "created_at", type = FieldType.Long)
+    private Long createdAt;
 
-    @Field(name = "deleted_at", type = FieldType.Date, format = DateFormat.date_optional_time)
-    private String deletedAt;
+    @Field(name = "deleted_at", type = FieldType.Long)
+    private Long deletedAt;
 
     @Field(name = "deleted_by", type = FieldType.Long)
     private Long deletedBy;
