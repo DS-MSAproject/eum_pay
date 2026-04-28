@@ -1,5 +1,6 @@
 package com.eum.authserver.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.eum.authserver.dto.*;
 import com.eum.authserver.entity.Address;
 import com.eum.authserver.entity.Profile;
@@ -9,10 +10,13 @@ import com.eum.authserver.repository.ProfileRepository;
 import com.eum.authserver.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,6 +30,10 @@ public class ProfileService {
     private final ProfileRepository   profileRepository;
     private final AddressRepository   addressRepository;
     private final PasswordEncoder     passwordEncoder;
+    private final WebClient.Builder   webClientBuilder;
+
+    @Value("${app.services.order.base-url:http://dseum-order}")
+    private String orderServiceBaseUrl;
 
     // ── 마이페이지 메인 조회 ─────────────────────────────────────────────
     public ProfileResponse getProfile(String email) {
@@ -38,7 +46,7 @@ public class ProfileService {
         // productserver → wishlistCount
         // boardserver  → postCount
         int couponCount     = 0;
-        int orderTotalCount = 0;
+        int orderTotalCount = fetchOrderTotalCount(user.getId());
         int wishlistCount   = 0;
         int postCount       = 0;
 
@@ -290,6 +298,27 @@ public class ProfileService {
     private Profile getOrCreateProfile(Long userId) {
         return profileRepository.findByUserId(userId)
                 .orElseGet(() -> profileRepository.save(Profile.createDefault(userId)));
+    }
+
+    private int fetchOrderTotalCount(Long userId) {
+        try {
+            JsonNode response = webClientBuilder.build()
+                    .get()
+                    .uri(orderServiceBaseUrl + "/orders?page=1&size=1")
+                    .header("X-User-Id", String.valueOf(userId))
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block(Duration.ofSeconds(2));
+
+            if (response == null || !response.has("totalElements")) {
+                log.warn("주문 수 조회 응답에 totalElements가 없습니다. userId={}", userId);
+                return 0;
+            }
+            return response.get("totalElements").asInt(0);
+        } catch (Exception e) {
+            log.warn("주문 수 조회 실패. userId={}, message={}", userId, e.getMessage());
+            return 0;
+        }
     }
 
     private String resolveRecipientName(User user) {

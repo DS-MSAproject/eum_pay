@@ -15,10 +15,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class LoginHistory {
 
+    // 로그인 이력 PK
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 로그인한 사용자. users 테이블과 N:1 관계
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -32,6 +34,7 @@ public class LoginHistory {
     @Column(nullable = false)
     private String provider;   // 로그인 방식 (local, google, naver)
 
+    // 로그인 발생 시각
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime loginAt;

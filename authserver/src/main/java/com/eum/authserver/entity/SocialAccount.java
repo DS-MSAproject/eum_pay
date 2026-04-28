@@ -23,10 +23,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class SocialAccount {
 
+    // 소셜 계정 연동 PK
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 소셜 계정이 연결된 사용자. 한 사용자는 여러 제공자를 연결할 수 있음
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -37,10 +39,12 @@ public class SocialAccount {
     @Column(name = "provider_id", nullable = false)
     private String providerId;  // 소셜 제공자 측 고유 ID
 
+    // 소셜 계정 최초 연결 시각
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime connectedAt;
 
+    // 소셜 계정 엔티티 생성용 팩토리 메서드
     public static SocialAccount of(User user, String provider, String providerId) {
         SocialAccount sa = new SocialAccount();
         sa.setUser(user);
