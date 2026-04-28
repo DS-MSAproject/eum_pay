@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "categoryName": "Bakery",
     "productName": "어글어글 동물복지 연어마들렌",
@@ -319,19 +319,19 @@
       },
       {
         "optionName": "전라남도 나주 유황오리 안심 육포 50g",
-        "extraPrice" : 1000
+        "extraPrice": 1000
       },
       {
         "optionName": "제주 흑돼지 육포 50g",
-        "extraPrice" : 1000
+        "extraPrice": 1000
       },
       {
         "optionName": "제주 말고기 육포 50g",
-        "extraPrice" : 2000
+        "extraPrice": 2000
       },
       {
         "optionName": "해외 칠면조 가슴살 육포 50g",
-        "extraPrice" : 2000
+        "extraPrice": 2000
       }
     ]
   },

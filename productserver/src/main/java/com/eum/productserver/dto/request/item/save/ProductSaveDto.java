@@ -44,9 +44,8 @@ public class ProductSaveDto {
     private Long deliveryFee;      // 배송비
     private String deliveryMethod; // 배송 방법
 
-    private Long salesCount;       // 임의 판매량 (예: 5000)
-    private Integer salesRank;     // 임의 순위 (1~3위 태그 결정용)
-
+    private Long salesCount;
+    private Integer salesRank;
 
     private List<ProductOptionSaveDto> options;
 
