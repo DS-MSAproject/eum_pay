@@ -24,6 +24,7 @@ public class ProfileResponse {
     public static class UserSummary {
         private Long id;
         private String name;
+        private String profileImgUrl;
         private String greetingMessage;
         private String membershipLevel;
     }

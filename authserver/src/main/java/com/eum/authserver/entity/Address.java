@@ -16,10 +16,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Address {
 
+    // 배송지 PK
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 배송지를 소유한 사용자 ID. authserver users.id 값
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
@@ -59,10 +61,12 @@ public class Address {
     @Column(name = "is_default", nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
     private boolean isDefault = false;
 
+    // 배송지 최초 등록 시각
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    // 배송지 마지막 수정 시각
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 @Builder
 public class Terms {
 
+    // 약관 PK
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -56,10 +57,12 @@ public class Terms {
     @Column(name = "effective_date")
     private LocalDateTime effectiveDate;
 
+    // 약관 등록 시각
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    // 약관 마지막 수정 시각
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
