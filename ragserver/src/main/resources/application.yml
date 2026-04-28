@@ -31,6 +31,15 @@ management:
     tags:
       application: ${spring.application.name}
 
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8070/eureka/}
+    register-with-eureka: ${EUREKA_CLIENT_REGISTER_WITH_EUREKA:true}
+    fetch-registry: ${EUREKA_CLIENT_FETCH_REGISTRY:true}
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:true}
+
 rag:
   ai:
     base-url: ${RAG_GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}

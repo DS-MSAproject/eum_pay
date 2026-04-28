@@ -53,11 +53,12 @@ public class ReviewController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReviewCreateResponse> createReview(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-User-Name", required = false) String userName,
             @RequestPart("data") String data,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
         return ResponseEntity.ok(
-                reviewService.createReview(userId, parseAndValidate(data, CreateReviewRequest.class), files)
+                reviewService.createReview(userId, userName, parseAndValidate(data, CreateReviewRequest.class), files)
         );
     }
 

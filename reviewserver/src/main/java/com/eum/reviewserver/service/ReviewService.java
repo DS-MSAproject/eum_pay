@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -63,6 +64,7 @@ public class ReviewService {
     @Transactional
     public ReviewCreateResponse createReview(
             Long writerId,
+            String writerNameHeader,
             CreateReviewRequest request,
             List<MultipartFile> files
     ) {
@@ -77,7 +79,7 @@ public class ReviewService {
         Review review = new Review();
         review.setProductId(request.productId());
         review.setWriterId(writerId);
-        review.setWriterName(resolveWriterName(writerId));
+        review.setWriterName(resolveWriterName(writerId, writerNameHeader));
         review.setStar(request.star());
         review.setPreferenceScore(request.preferenceScore());
         review.setRepurchaseScore(request.repurchaseScore());
@@ -344,7 +346,10 @@ public class ReviewService {
         return value == null ? 0 : value;
     }
 
-    private String resolveWriterName(Long writerId) {
+    private String resolveWriterName(Long writerId, String writerNameHeader) {
+        if (StringUtils.hasText(writerNameHeader)) {
+            return writerNameHeader.trim();
+        }
         return "user-" + writerId;
     }
 }
