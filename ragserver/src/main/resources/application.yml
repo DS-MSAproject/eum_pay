@@ -55,11 +55,18 @@ rag:
     queue-capacity: ${RAG_ASYNC_QUEUE_CAPACITY:200}
     thread-name-prefix: rag-async-
   document:
-    chunk-size: ${RAG_DOCUMENT_CHUNK_SIZE:650}
-    chunk-overlap: ${RAG_DOCUMENT_CHUNK_OVERLAP:120}
+    chunk-size: ${RAG_DOCUMENT_CHUNK_SIZE:320}
+    chunk-min-size: ${RAG_DOCUMENT_CHUNK_MIN_SIZE:180}
+    chunk-max-size: ${RAG_DOCUMENT_CHUNK_MAX_SIZE:480}
+    chunk-overlap-ratio: ${RAG_DOCUMENT_CHUNK_OVERLAP_RATIO:0.15}
     metadata-ttl-days: ${RAG_DOCUMENT_METADATA_TTL_DAYS:7}
     reindex-lock-wait-seconds: ${RAG_REINDEX_LOCK_WAIT_SECONDS:5}
     reindex-lock-ttl-seconds: ${RAG_REINDEX_LOCK_TTL_SECONDS:30}
+    bootstrap:
+      enabled: ${RAG_OPENBOOK_BOOTSTRAP_ENABLED:true}
+      file-path: ${RAG_OPENBOOK_BOOTSTRAP_FILE_PATH:ragserver/docs/petfood-openbook-upload-ready.pdf}
+      document-id: ${RAG_OPENBOOK_DOCUMENT_ID:petfood-openbook}
+      category: ${RAG_OPENBOOK_CATEGORY:NOTICE}
   chat:
     max-sources: ${RAG_CHAT_MAX_SOURCES:3}
     rewrite-short-question-length: ${RAG_CHAT_REWRITE_SHORT_QUESTION_LENGTH:14}

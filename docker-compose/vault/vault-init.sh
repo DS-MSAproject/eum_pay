@@ -128,6 +128,19 @@ if [ -f "$AWS_ENV_PATH" ]; then
     else
         echo "==> [경고] TOSS_SECRET_KEY가 .env에 없어 결제 서비스가 정상 동작하지 않을 수 있습니다."
     fi
+
+    # Gemini API 키 — .env에서도 읽어 dseum-rag에 반영
+    GEMINI_API_KEY=$(grep "^GEMINI_API_KEY=" "$AWS_ENV_PATH" | cut -d'=' -f2- | tr -d '\n\r ')
+    if [ -n "$GEMINI_API_KEY" ]; then
+        echo "==> [보안] Gemini API 키를 금고에 저장합니다..."
+        vault kv patch secret/dseum-rag \
+            GEMINI_API_KEY="$GEMINI_API_KEY" \
+            "gemini.api-key"="$GEMINI_API_KEY" \
+            "rag.ai.api-key"="$GEMINI_API_KEY"
+        echo "==> [완료] Gemini API 키 패치 성공!"
+    else
+        echo "==> [경고] GEMINI_API_KEY가 .env에 없어 RAG 생성형 응답이 제한될 수 있습니다."
+    fi
 else
     echo "==> [경고] $AWS_ENV_PATH 파일을 찾을 수 없어 AWS/Toss 설정 주입을 건너뜁니다."
 fi

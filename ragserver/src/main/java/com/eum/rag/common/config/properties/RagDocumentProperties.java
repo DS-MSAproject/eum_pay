@@ -5,7 +5,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "rag.document")
 public record RagDocumentProperties(
         int chunkSize,
-        int chunkOverlap,
+        int chunkMinSize,
+        int chunkMaxSize,
+        double chunkOverlapRatio,
         int metadataTtlDays,
         int reindexLockWaitSeconds,
         int reindexLockTtlSeconds

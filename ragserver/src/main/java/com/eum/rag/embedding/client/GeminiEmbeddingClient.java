@@ -47,7 +47,7 @@ public class GeminiEmbeddingClient implements EmbeddingClient {
         } catch (NonRetryableGeminiException exception) {
             throw new BusinessException(ErrorCode.QUOTA_EXCEEDED, "Gemini API quota exceeded (429). Please try again later.");
         } catch (RuntimeException exception) {
-            log.warn("Gemini embedding call failed after resilience policies: {}", exception.getMessage());
+            log.warn("Gemini embedding call failed after resilience policies: {}", exception.getMessage(), exception);
             throw new BusinessException(ErrorCode.EMBEDDING_ERROR,
                     "Failed to call Gemini embedding API: " + exception.getMessage());
         }
@@ -70,7 +70,9 @@ public class GeminiEmbeddingClient implements EmbeddingClient {
                     .onErrorResume(WebClientResponseException.TooManyRequests.class,
                             error -> Mono.error(new NonRetryableGeminiException("Gemini quota exceeded", error)))
                     .onErrorResume(WebClientResponseException.class,
-                            error -> Mono.error(new IllegalStateException("Gemini embedding API call failed: " + error.getStatusCode(), error)))
+                            error -> Mono.error(new IllegalStateException(
+                                    "Gemini embedding API call failed: " + error.getStatusCode() + ", body=" + error.getResponseBodyAsString(),
+                                    error)))
                     .onErrorResume(error -> Mono.error(new IllegalStateException("Gemini embedding API call failed", error)))
                     .block();
 

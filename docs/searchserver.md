@@ -26,6 +26,14 @@
 
 페이지형 응답(`SearchPageResponse<T>`)의 실제 JSON 마샬링 결과는 아래 형태입니다.
 
+- `extra` 필드 설명
+  - 도메인별 부가정보를 담는 선택 필드입니다.
+  - 값이 `null`이면 JSON 직렬화 시 응답에서 제외됩니다.
+  - 엔드포인트마다 키 구성이 다를 수 있습니다.
+  - 현재 확인된 주요 예시
+    - 상품 검색(`/api/v1/search/products`): `extra.trendingKeywords`
+    - 공지 검색(`/api/v1/search/notices`): `extra.menuTitle`
+
 - `extra`가 없을 때 (`null`이면 직렬화에서 제외)
 
 ```json
@@ -294,16 +302,7 @@
   - `data[]`: `key`, `label`, `emoji`, `route`, `api`
   - `api`: `method`, `endpoint`, `query`, `responsePath`
 
-## 7) FAQ API 안내
-
-코드 기준 `FaqSearchController` 경로는 아래와 같습니다.
-- `GET /faq`
-- `GET /faq/{faqId}`
-
-현재 게이트웨이의 `/api/v1/search/** -> /search/**` 리라이트 규칙과는 경로가 다릅니다.  
-즉, 게이트웨이 기준으로 FAQ를 노출하려면 라우팅 또는 컨트롤러 경로 정합화가 추가로 필요합니다.
-
-## 8) 페이지네이션 공통응답 미포함 API
+## 7) 페이지네이션 공통응답 미포함 API
 
 아래 API들은 `SearchPageResponse<T>`를 사용하지 않으므로, `totalElements/totalPages/currentPage/size` 등의 페이지네이션 필드를 포함하지 않습니다.
 
@@ -314,4 +313,3 @@
 - `GET /api/v1/search/brand-story` (`Mono<Map<String, Object>>`)
 - `GET /api/v1/search/brand-story/detail` (`Mono<Map<String, Object>>`)
 - `GET /api/v1/search/navigation` (`NavigationMenuResponse`)
-- `GET /faq/{faqId}` (`FaqDetailResponse`, 내부 컨트롤러 기준)
