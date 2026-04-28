@@ -281,6 +281,7 @@ whitelist:
     - /api/v1/product/**
     - /api/v1/search/**
     - /api/v1/notices/**
+    - /api/v1/rag/**
 
 eureka:
   client:
