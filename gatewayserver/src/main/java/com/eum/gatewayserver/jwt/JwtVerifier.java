@@ -42,5 +42,6 @@ public class JwtVerifier {
     public String getJti(Claims claims)    { return claims.getId(); }
     public String getUserId(Claims claims) { return claims.get("userId", String.class); }
     public String getEmail(Claims claims)  { return claims.getSubject(); }
+    public String getName(Claims claims)   { return claims.get("name", String.class); }
     public String getRole(Claims claims)   { return claims.get("role", String.class); }
 }

@@ -148,7 +148,9 @@ public class JwtAuthenticationFilter implements WebFilter {
         String jti    = jwtVerifier.getJti(claims);
         String userId = jwtVerifier.getUserId(claims);
         String email  = jwtVerifier.getEmail(claims);
+        String name   = jwtVerifier.getName(claims);
         String role   = jwtVerifier.getRole(claims);
+        String displayName = (name != null && !name.isBlank()) ? name : email;
 
         return redisTemplate.hasKey("blacklist:" + jti)
                 .flatMap(isBlacklisted -> {
@@ -163,6 +165,8 @@ public class JwtAuthenticationFilter implements WebFilter {
                             .request(r -> r
                                     .header("X-User-Id", userId)
                                     .header("X-User-Email", email)
+                                    .header("X-User-Name", displayName)
+                                    .header("X-Name", displayName)
                                     .header("X-User-Role", role)
                             )
                             .build();

@@ -141,8 +141,9 @@ public class AuthService {
     // ── 토큰 발급 (로그인 + OAuth2 공통) ─────────────
     @Transactional
     public TokenPair issue(User user) {
+        String displayName = resolveDisplayName(user);
         String accessToken  = jwtProvider.createAccessToken(
-                user.getId(), user.getEmail(), user.getRole().getKey());
+                user.getId(), user.getEmail(), user.getRole().getKey(), displayName);
         String refreshToken = jwtProvider.createRefreshToken();
         refreshTokenRepo.save(user.getId(), refreshToken);
         return new TokenPair(accessToken, refreshToken);
@@ -229,5 +230,15 @@ public class AuthService {
         } catch (Exception e) {
             log.warn("로그인 이력 저장 실패 (무시): {}", e.getMessage());
         }
+    }
+
+    private String resolveDisplayName(User user) {
+        if (user.getName() != null && !user.getName().isBlank()) {
+            return user.getName();
+        }
+        if (user.getUsername() != null && !user.getUsername().isBlank()) {
+            return user.getUsername();
+        }
+        return user.getEmail();
     }
 }

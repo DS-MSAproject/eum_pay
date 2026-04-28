@@ -24,12 +24,13 @@ public class JwtProvider {
     private long accessTokenExpire;
 
     // ── Access Token 생성 ─────────────────────────────
-    public String createAccessToken(Long userId, String email, String role) {
+    public String createAccessToken(Long userId, String email, String role, String name) {
         Date now = new Date();
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(email)
                 .claim("userId", userId.toString())
+                .claim("name",   name)
                 .claim("role",   role)
                 .claim("type",   "access")
                 .issuedAt(now)
@@ -68,6 +69,7 @@ public class JwtProvider {
     // ── 클레임 추출 ───────────────────────────────────
     public String getEmail(String token)      { return parseClaims(token).getSubject(); }
     public String getUserId(String token)     { return parseClaims(token).get("userId", String.class); }
+    public String getName(String token)       { return parseClaims(token).get("name",   String.class); }
     public String getRole(String token)       { return parseClaims(token).get("role",   String.class); }
     public String getJti(String token)        { return parseClaims(token).getId(); }
     public Date   getExpiration(String token) { return parseClaims(token).getExpiration(); }
