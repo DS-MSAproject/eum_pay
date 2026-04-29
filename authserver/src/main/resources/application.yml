@@ -35,6 +35,9 @@ spring:
       port: 6379
       password: ${AUTH_REDIS_PASSWORD:}
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:kafka:9092,kafka2:9092,kafka3:9092}
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -114,6 +117,10 @@ vault:
   uri: ${VAULT_URI:http://dseum-vault:8200}
   token: ${VAULT_TOKEN:}
   path: ${VAULT_PATH:secret/auth/rsa}
+
+admin:
+  elasticsearch:
+    url: ${ELASTICSEARCH_URL:http://elasticsearch:9200}
 
 app:
   frontend-url: https://localhost:5173
