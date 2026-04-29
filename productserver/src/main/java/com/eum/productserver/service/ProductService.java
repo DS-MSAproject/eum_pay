@@ -82,7 +82,7 @@ public class ProductService {
     // 상품 상세 조회
     public ResProductDetail findProductDetail(Long productId) {
         log.info("ProductService.findProductDetail productId= {}", productId);
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 상품을 찾을 수 없습니다."));
 
         List<InventoryStockResponse> inventoryStocks = fetchInventoryStocks(List.of(productId));
@@ -172,7 +172,7 @@ public class ProductService {
     }
 
     public ProductFrontendDto getFrontendProduct(Long productId) {
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 상품을 찾을 수 없습니다."));
 
         return ProductFrontendDto.builder()
@@ -269,7 +269,7 @@ public class ProductService {
             List<MultipartFile> imageFiles,
             List<MultipartFile> detailImageFiles
     ) {
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
         List<ImageFileSaveDto> seedImages = resolveImages(List.of(), imageFiles);
@@ -362,7 +362,7 @@ public class ProductService {
         );
         validateImageLimit(images);
 
-        Product product = productRepository.findById(request.getProductUpdateDto().getProductId())
+        Product product = productRepository.findByProductId(request.getProductUpdateDto().getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -534,7 +534,7 @@ public class ProductService {
 
     // 4. 상품 삭제
     public void deleteProduct(Long id, Long sellerId) {
-        Product product = productRepository.findById(id)
+        Product product = productRepository.findByProductId(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 상품을 찾을 수 없습니다."));
 
         productRepository.delete(product);

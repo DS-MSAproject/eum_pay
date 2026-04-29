@@ -4,6 +4,8 @@ import com.eum.productserver.common.BaseTimeEntity;
 import com.eum.productserver.dto.request.item.update.ProductUpdateDto;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +27,11 @@ public class Product extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "product_id")
+    @Column(name = "id")
+    private Long id;
+
+    @Generated(event = EventType.INSERT)
+    @Column(name = "product_id", unique = true, nullable = false, insertable = false, updatable = false)
     private Long productId;
 
     @Column(nullable = false)

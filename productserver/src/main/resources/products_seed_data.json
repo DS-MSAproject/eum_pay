@@ -1,5 +1,6 @@
-﻿[
+[
   {
+    "productId": 1,
     "categoryName": "Bakery",
     "productName": "어글어글 동물복지 연어마들렌",
     "content": "동물복지 원료와 연어를 담아 부드럽게 구운 마들렌 간식입니다.",
@@ -11,6 +12,7 @@
     "price": 3500
   },
   {
+    "productId": 2,
     "categoryName": "Bakery",
     "productName": "어글어글 베이커리 뼈간식 7종",
     "content": "다양한 맛과 모양으로 즐길 수 있는 수제 뼈간식 7종 구성입니다.",
@@ -51,6 +53,7 @@
     ]
   },
   {
+    "productId": 3,
     "categoryName": "Bakery",
     "productName": "어글어글 아이스크림 케이크 300g 4종",
     "content": "특별한 날을 위한 반려견용 아이스크림 케이크입니다.",
@@ -76,6 +79,7 @@
     ]
   },
   {
+    "productId": 4,
     "categoryName": "Bakery",
     "productName": "어글어글 제주치킨 스윗치즈번",
     "content": "제주치킨과 치즈 풍미를 담아 맛있게 즐기는 베이커리 간식입니다.",
@@ -87,6 +91,7 @@
     "price": 5000
   },
   {
+    "productId": 5,
     "categoryName": "스위피 그린빈",
     "productName": "스위피 소이밀크 펫두유 1BOX",
     "content": "반려견도 부담 없이 즐길 수 있는 소이밀크 펫두유 1BOX 구성입니다.",
@@ -98,6 +103,7 @@
     "price": 24000
   },
   {
+    "productId": 6,
     "categoryName": "스위피 그린빈",
     "productName": "어글어글 제주야채 믹스샐러드",
     "content": "제주산 야채를 담아 가볍게 곁들이기 좋은 믹스샐러드입니다.",
@@ -109,6 +115,7 @@
     "price": 6500
   },
   {
+    "productId": 7,
     "categoryName": "스위피 테린",
     "productName": "뉴 비프테린",
     "content": "부드러운 식감의 비프 테린으로 한 끼를 든든하게 채워주는 식사입니다.",
@@ -120,6 +127,7 @@
     "price": 4400
   },
   {
+    "productId": 8,
     "categoryName": "스위피 테린",
     "productName": "대구테린",
     "content": "담백한 대구를 부드럽게 즐길 수 있는 테린 식사입니다.",
@@ -131,6 +139,7 @@
     "price": 4000
   },
   {
+    "productId": 9,
     "categoryName": "스위피 테린",
     "productName": "덕테린",
     "content": "오리의 풍미를 촉촉하게 담아낸 테린 식사입니다.",
@@ -142,6 +151,7 @@
     "price": 3600
   },
   {
+    "productId": 10,
     "categoryName": "스위피 테린",
     "productName": "연어테린",
     "content": "연어를 부드럽게 갈아 만든 촉촉한 테린 식사입니다.",
@@ -153,6 +163,7 @@
     "price": 4000
   },
   {
+    "productId": 11,
     "categoryName": "스위피 테린",
     "productName": "치킨테린",
     "content": "닭고기를 부드럽게 담아 부담 없이 즐기는 테린 식사입니다.",
@@ -164,6 +175,7 @@
     "price": 2800
   },
   {
+    "productId": 12,
     "categoryName": "어글어글 스팀",
     "productName": "어글어글 스팀 100g 8종",
     "content": "어글어글 스팀 8종을 100g 구성으로 다양하게 즐길 수 있는 상품입니다.",
@@ -199,6 +211,7 @@
     ]
   },
   {
+    "productId": 13,
     "categoryName": "어글어글 스팀",
     "productName": "어글어글 스팀 300g 대용량 8종",
     "content": "어글어글 스팀을 활용하기 좋은 300g 대용량 구성입니다.",
@@ -234,6 +247,7 @@
     ]
   },
   {
+    "productId": 14,
     "categoryName": "어글어글 우유껌",
     "productName": "어글어글 우유껌 50g 7종",
     "content": "쫄깃하게 즐길 수 있는 우유껌 7종을 담은 간식입니다.",
@@ -272,6 +286,7 @@
     ]
   },
   {
+    "productId": 15,
     "categoryName": "어글어글 육포",
     "productName": "어글어글 육포 대용량 5종",
     "content": "다양한 맛의 육포 5종을 대용량으로 즐길 수 있는 구성입니다.",
@@ -304,6 +319,7 @@
     ]
   },
   {
+    "productId": 16,
     "categoryName": "어글어글 육포",
     "productName": "어글어글 육포 50g 5종",
     "content": "쫄깃한 식감과 풍부한 풍미를 담은 어글어글 육포입니다.",
@@ -336,6 +352,7 @@
     ]
   },
   {
+    "productId": 17,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 3종세트",
     "content": "오독오독 바삭 인기 3종을 한 번에 즐길 수 있는 세트입니다.",
@@ -347,6 +364,7 @@
     "price": 47700
   },
   {
+    "productId": 18,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 6종세트",
     "content": "오독오독 바삭 6종을 넉넉하게 담은 세트 상품입니다.",
@@ -358,6 +376,7 @@
     "price": 100400
   },
   {
+    "productId": 19,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 고구마",
     "content": "고구마를 바삭하게 건조해 달콤하게 즐길 수 있는 간식입니다.",
@@ -369,6 +388,7 @@
     "price": 15900
   },
   {
+    "productId": 20,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 당근",
     "content": "당근을 바삭하게 건조해 가볍게 즐길 수 있는 간식입니다.",
@@ -380,6 +400,7 @@
     "price": 15900
   },
   {
+    "productId": 21,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 캥거루 120g",
     "content": "캥거루 원물을 바삭하게 건조해 만든 120g 간식입니다.",
@@ -391,6 +412,7 @@
     "price": 20900
   },
   {
+    "productId": 22,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 덕브로콜리",
     "content": "오리와 브로콜리를 바삭하게 담아 식감과 풍미를 살린 간식입니다.",
@@ -402,6 +424,7 @@
     "price": 20900
   },
   {
+    "productId": 23,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 연어껍질 120g",
     "content": "연어껍질을 바삭하게 건조해 고소한 식감을 살린 120g 간식입니다.",
@@ -413,6 +436,7 @@
     "price": 15900
   },
   {
+    "productId": 24,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 시금치 120g",
     "content": "시금치를 바삭하게 즐길 수 있도록 만든 120g 간식입니다.",
@@ -424,6 +448,7 @@
     "price": 15900
   },
   {
+    "productId": 25,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 치킨블루베리 120g",
     "content": "치킨과 블루베리를 함께 담아 바삭하게 즐기는 120g 간식입니다.",
@@ -435,6 +460,7 @@
     "price": 15900
   },
   {
+    "productId": 26,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 덕블연 3종세트",
     "content": "오리, 블루베리, 연어 계열 바삭 간식을 한 번에 담은 3종 세트입니다.",
@@ -446,6 +472,7 @@
     "price": 52700
   },
   {
+    "productId": 27,
     "categoryName": "오독오독",
     "productName": "오독오독 포켓 3종 대용량 (5개입)",
     "content": "오독오독 포켓 3종을 넉넉하게 구성한 대용량 5개입 세트입니다.",
@@ -468,6 +495,7 @@
     ]
   },
   {
+    "productId": 28,
     "categoryName": "오독오독",
     "productName": "스위피 오독오독 미니 2종 60g",
     "content": "작은 크기로 부담 없이 즐길 수 있는 스위피 오독오독 미니 2종 60g 간식입니다.",
@@ -479,6 +507,7 @@
     "price": 9800
   },
   {
+    "productId": 29,
     "categoryName": "오독오독",
     "productName": "오독오독 바삭 7종 골라담기",
     "content": "오독오독 바삭 7종 중 원하는 맛을 골라 담을 수 있는 상품입니다.",
@@ -520,6 +549,7 @@
     ]
   },
   {
+    "productId": 30,
     "categoryName": "오래먹는 간식",
     "productName": "스위피 꽈배기 츄 40g",
     "content": "스위피 꽈배기 츄입니다.",
@@ -531,6 +561,7 @@
     "price": 12900
   },
   {
+    "productId": 31,
     "categoryName": "오래먹는 간식",
     "productName": "스위피 덕본 오리뼈 오리날개뼈 150g",
     "content": "스위피 덕본 오리뼈 오리날개뼈입니다..",
@@ -542,6 +573,7 @@
     "price": 8900
   },
   {
+    "productId": 32,
     "categoryName": "오래먹는 간식",
     "productName": "스위피 덕본 오리뼈 오리목뼈 150g",
     "content": "스위피 덕본 오리뼈 오리목뼈입니다.",
@@ -553,6 +585,7 @@
     "price": 8900
   },
   {
+    "productId": 33,
     "categoryName": "오래먹는 간식",
     "productName": "어글어글 강원도 대관령 무염 황태채 40g",
     "content": "어글어글 강원도 대관령 무염 황태채입니다.",
@@ -564,6 +597,7 @@
     "price": 12000
   },
   {
+    "productId": 34,
     "categoryName": "오래먹는 간식",
     "productName": "어글어글 뼈 간식 4종",
     "content": "어글어글 뼈 간식입니다.",

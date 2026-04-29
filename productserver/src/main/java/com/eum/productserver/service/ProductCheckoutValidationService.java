@@ -58,7 +58,7 @@ public class ProductCheckoutValidationService {
             throw new IllegalArgumentException("주문 수량은 1 이상이어야 합니다. productId=" + item.getProductId());
         }
 
-        Product product = productRepository.findById(item.getProductId())
+        Product product = productRepository.findByProductId(item.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다. productId=" + item.getProductId()));
 
         if (!product.isActiveForProjection()) {

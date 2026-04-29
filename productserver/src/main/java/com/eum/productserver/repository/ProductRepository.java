@@ -12,6 +12,8 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom, JpaSpecificationExecutor<Product> {
 
+    Optional<Product> findByProductId(Long productId);
+
     // 1. 특정 카테고리에 속한 상품 존재 여부
     boolean existsByCategoryId(Long categoryId); // 엔티티 필드명에 맞춰 수정 권장
 
