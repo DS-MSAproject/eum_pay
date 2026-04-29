@@ -64,8 +64,8 @@ public class OrderEventConsumerConfig {
                 log.warn("유효하지 않은 OrderCancelled 이벤트. eventId={}", message != null ? message.getEventId() : null);
                 return;
             }
-            log.info("OrderCancelled 수신 — 스냅샷 삭제 (장바구니 유지). orderId={}", message.getOrderId());
-            snapshotService.clearSnapshotOnly(message.getOrderId(), "OrderCancelled");
+            log.info("OrderCancelled 수신. orderId={}, userId={}", message.getOrderId(), message.getUserId());
+            snapshotService.handleOrderCancelled(message.getOrderId(), message.getUserId());
         };
     }
 }

@@ -1,5 +1,7 @@
 package com.eum.cartserver.service;
 
+import com.eum.cartserver.client.OrderDetailClient;
+import com.eum.cartserver.client.dto.OrderDetailDto;
 import com.eum.cartserver.domain.CartCheckoutSnapshot;
 import com.eum.cartserver.dto.CartItemDeleteRequest;
 import com.eum.cartserver.message.OrderCheckedOutMessage;
@@ -22,6 +24,7 @@ public class CartCheckoutSnapshotService {
     private final CartCheckoutSnapshotRepository snapshotRepository;
     private final CartService cartService;
     private final ObjectMapper objectMapper;
+    private final OrderDetailClient orderDetailClient;
 
     @Transactional
     public void saveSnapshot(Long orderId, Long userId, List<OrderCheckedOutMessage.Item> items) {
@@ -62,6 +65,31 @@ public class CartCheckoutSnapshotService {
                     log.info("스냅샷 삭제 (장바구니 유지). orderId={}, reason={}", orderId, reason);
                 },
                 () -> log.debug("삭제할 스냅샷 없음. orderId={}", orderId)
+        );
+    }
+
+    @Transactional
+    public void handleOrderCancelled(Long orderId, Long userId) {
+        snapshotRepository.findByOrderId(orderId).ifPresentOrElse(
+                snapshot -> {
+                    snapshotRepository.deleteByOrderId(orderId);
+                    log.info("OrderCancelled — 스냅샷 삭제 (장바구니 유지). orderId={}", orderId);
+                },
+                () -> {
+                    // 스냅샷 없음 = PaymentCompleted에서 이미 장바구니 삭제됨 → 복원
+                    log.info("OrderCancelled — 스냅샷 없음, 장바구니 복원 시도. orderId={}, userId={}", orderId, userId);
+                    try {
+                        OrderDetailDto orderDetail = orderDetailClient.getOrderDetail(orderId);
+                        List<OrderDetailDto.Item> items = orderDetail.getItems();
+                        if (items == null || items.isEmpty()) {
+                            log.warn("OrderCancelled — 주문 항목 없음, 복원 불가. orderId={}", orderId);
+                            return;
+                        }
+                        cartService.restoreOrderedItems(userId, items);
+                    } catch (Exception e) {
+                        log.error("OrderCancelled — 장바구니 복원 실패. orderId={}, error={}", orderId, e.getMessage(), e);
+                    }
+                }
         );
     }
 

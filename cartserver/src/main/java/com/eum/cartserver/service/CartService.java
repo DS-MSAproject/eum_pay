@@ -1,5 +1,6 @@
 package com.eum.cartserver.service;
 
+import com.eum.cartserver.client.dto.OrderDetailDto;
 import com.eum.cartserver.domain.Cart;
 import com.eum.cartserver.dto.CartItemDeleteRequest;
 import com.eum.cartserver.dto.CartItemResponse;
@@ -124,6 +125,25 @@ public class CartService {
         }
         cartRepository.save(cart);
         log.info("[removeOrderedItems] 완료. userId={}, 삭제={}/요청={}", userId, removed, requests.size());
+    }
+
+    @Transactional
+    public void restoreOrderedItems(Long userId, List<OrderDetailDto.Item> items) {
+        log.info("[restoreOrderedItems] 장바구니 복원 시작. userId={}, itemCount={}", userId, items.size());
+        int restored = 0;
+        for (OrderDetailDto.Item item : items) {
+            try {
+                Long optionId = item.getOptionId() == null ? 0L : item.getOptionId();
+                addItem(userId, item.getProductId(), optionId, item.getQuantity());
+                restored++;
+                log.info("[restoreOrderedItems] 항목 복원. userId={}, productId={}, optionId={}, quantity={}",
+                        userId, item.getProductId(), optionId, item.getQuantity());
+            } catch (Exception e) {
+                log.warn("[restoreOrderedItems] 항목 복원 실패 — 건너뜀. userId={}, productId={}, error={}",
+                        userId, item.getProductId(), e.getMessage());
+            }
+        }
+        log.info("[restoreOrderedItems] 완료. userId={}, 복원={}/요청={}", userId, restored, items.size());
     }
 
     private Cart getOrCreateCart(Long userId) {
