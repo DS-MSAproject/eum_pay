@@ -256,6 +256,11 @@ public class PaymentService {
         cancelApprovedPayment(message.getCorrelationId(), payment, request);
     }
 
+    // 관리자 강제 취소 — userId 검증 없이 직접 취소 (AdminPaymentService 전용)
+    PaymentResponse adminForceCancel(String correlationId, Payment payment, CancelPaymentRequest request) {
+        return cancelApprovedPayment(correlationId, payment, request);
+    }
+
     /**
      * Toss 결제 취소 흐름도 confirm과 동일하게 TX를 외부 API 호출 전후로 분리한다.
      */
