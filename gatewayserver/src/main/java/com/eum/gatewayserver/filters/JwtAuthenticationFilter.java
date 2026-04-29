@@ -48,6 +48,11 @@ public class JwtAuthenticationFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        // CORS preflight — JWT 검증 없이 통과 (CORS 필터가 처리)
+        if (exchange.getRequest().getMethod() == org.springframework.http.HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
+
         String path = exchange.getRequest().getPath().value();
         List<String> whitelist = whitelistConfig.getPaths();
 

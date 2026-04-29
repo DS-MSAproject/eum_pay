@@ -26,9 +26,9 @@ import java.util.stream.Collectors;
 public class AdminMonitoringService {
 
     private static final List<String> EUREKA_SERVICES = List.of(
-            "AUTHSERVER", "PRODUCTSERVER", "INVENTORYSERVER", "ORDERSERVER",
-            "PAYMENTSERVER", "REVIEWSERVER", "CARTSERVER", "SEARCHSERVER",
-            "BOARDSERVER", "RAGSERVER"
+            "AUTHSERVER", "DSEUM-PRODUCT", "DSEUM-INVENTORY", "DSEUM-ORDER",
+            "DSEUM-PAYMENT", "DSEUM-REVIEW", "DSEUM-CART", "DSEUM-SEARCH",
+            "DSEUM-BOARD", "RAGSERVER"
     );
 
     private final WebClient.Builder webClientBuilder;

@@ -19,5 +19,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = :status")
     Long sumAmountByStatus(@Param("status") PaymentState status);
 
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = :status AND p.approvedAt >= :from")
+    Long sumAmountByStatusAndApprovedAtGreaterThanEqual(@Param("status") PaymentState status, @Param("from") java.time.LocalDateTime from);
+
     long countByStatus(PaymentState status);
 }

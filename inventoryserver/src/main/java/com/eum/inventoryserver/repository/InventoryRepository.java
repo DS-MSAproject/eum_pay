@@ -31,4 +31,5 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     // 이 메서드는 그대로 두셔도 됩니다. (Service에서 합산 로직 처리)
     List<Inventory> findAllByProductIdIn(List<Long> productIds);
 
+    long countByStockQuantityLessThanEqual(int threshold);
 }

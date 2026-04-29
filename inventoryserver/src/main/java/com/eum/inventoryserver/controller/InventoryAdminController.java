@@ -3,6 +3,7 @@ package com.eum.inventoryserver.controller;
 import com.eum.inventoryserver.dto.admin.AdminInventoryEventResponse;
 import com.eum.inventoryserver.dto.admin.AdminInventoryLagAlertResponse;
 import com.eum.inventoryserver.dto.admin.AdminInventoryResponse;
+import com.eum.inventoryserver.dto.admin.AdminInventoryStatsResponse;
 import com.eum.inventoryserver.dto.admin.AdminInventoryTraceResponse;
 import com.eum.inventoryserver.service.AdminInventoryService;
 import com.eum.inventoryserver.service.InventoryService;
@@ -20,6 +21,13 @@ public class InventoryAdminController {
 
     private final InventoryService inventoryService;
     private final AdminInventoryService adminInventoryService;
+
+    // ── 대시보드 통계 ──────────────────────────────────
+    // GET /admin/inventory/stats
+    @GetMapping("/stats")
+    public ResponseEntity<AdminInventoryStatsResponse> getStats() {
+        return ResponseEntity.ok(adminInventoryService.getStats());
+    }
 
     // ── 재고 현황 목록 ─────────────────────────────────
     // GET /admin/inventory

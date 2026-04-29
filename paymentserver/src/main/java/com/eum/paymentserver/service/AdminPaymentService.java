@@ -7,6 +7,7 @@ import com.eum.paymentserver.domain.PaymentState;
 import com.eum.paymentserver.dto.CancelPaymentRequest;
 import com.eum.paymentserver.dto.admin.AdminIdempotencyViolationResponse;
 import com.eum.paymentserver.dto.admin.AdminPaymentResponse;
+import com.eum.paymentserver.dto.admin.AdminPaymentStatsResponse;
 import com.eum.paymentserver.dto.admin.AdminReconciliationResponse;
 import com.eum.paymentserver.repository.PaymentAttemptRepository;
 import com.eum.paymentserver.repository.PaymentCancelRepository;
@@ -21,6 +22,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +38,20 @@ public class AdminPaymentService {
     private final PaymentCancelRepository paymentCancelRepository;
     private final PaymentOutboxService paymentOutboxService;
     private final PaymentService paymentService;
+
+    // ── 대시보드 통계 ────────────────────────────────
+    public AdminPaymentStatsResponse getStats() {
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        long todayRevenue = paymentRepository.sumAmountByStatusAndApprovedAtGreaterThanEqual(PaymentState.APPROVED, todayStart);
+        long totalRevenue = paymentRepository.sumAmountByStatus(PaymentState.APPROVED);
+        long reconciliationIssues = paymentRepository.countByStatus(PaymentState.FAILED)
+                + paymentRepository.countByStatus(PaymentState.CANCEL_FAILED);
+        return AdminPaymentStatsResponse.builder()
+                .todayRevenue(todayRevenue)
+                .totalRevenue(totalRevenue)
+                .reconciliationIssues(reconciliationIssues)
+                .build();
+    }
 
     // ── 전체 결제 목록 ────────────────────────────────
     public Page<AdminPaymentResponse> listAllPayments(int page, int size, PaymentState status) {

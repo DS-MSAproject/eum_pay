@@ -3,6 +3,7 @@ package com.eum.inventoryserver.service;
 import com.eum.inventoryserver.dto.admin.AdminInventoryEventResponse;
 import com.eum.inventoryserver.dto.admin.AdminInventoryLagAlertResponse;
 import com.eum.inventoryserver.dto.admin.AdminInventoryResponse;
+import com.eum.inventoryserver.dto.admin.AdminInventoryStatsResponse;
 import com.eum.inventoryserver.dto.admin.AdminInventoryTraceResponse;
 import com.eum.inventoryserver.entity.Inventory;
 import com.eum.inventoryserver.entity.InventoryReservation;
@@ -28,6 +29,14 @@ public class AdminInventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final InventoryReservationRepository inventoryReservationRepository;
+
+    // ── 대시보드 통계 ──────────────────────────────────
+    public AdminInventoryStatsResponse getStats() {
+        long lowStockCount = inventoryRepository.countByStockQuantityLessThanEqual(10);
+        return AdminInventoryStatsResponse.builder()
+                .lowStockCount(lowStockCount)
+                .build();
+    }
 
     // ── 전체 재고 현황 ─────────────────────────────────
     public List<AdminInventoryResponse> listAllInventory() {

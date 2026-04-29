@@ -217,7 +217,7 @@ spring:
             - id: admin-order-service
               uri: lb://DSEUM-ORDER
               predicates:
-                - Path=/api/v1/admin/orders/**, /api/v1/admin/outbox/**
+                - Path=/api/v1/admin/orders, /api/v1/admin/orders/**, /api/v1/admin/outbox/**
               filters:
                 - RewritePath=/api/v1/admin/orders(?<segment>.*), /admin/orders${segment}
                 - RewritePath=/api/v1/admin/outbox(?<segment>.*), /admin/outbox${segment}
@@ -231,7 +231,7 @@ spring:
             - id: admin-payment-service
               uri: lb://DSEUM-PAYMENT
               predicates:
-                - Path=/api/v1/admin/payments/**
+                - Path=/api/v1/admin/payments, /api/v1/admin/payments/**
               filters:
                 - RewritePath=/api/v1/admin/payments(?<segment>.*), /admin/payments${segment}
                 - name: RequestRateLimiter
@@ -244,9 +244,9 @@ spring:
             - id: inventory-admin-service
               uri: lb://DSEUM-INVENTORY
               predicates:
-                - Path=/api/v1/admin/inventory/**
+                - Path=/api/v1/admin/inventory, /api/v1/admin/inventory/**
               filters:
-                - RewritePath=/api/v1/admin/inventory/?(?<segment>.*), /admin/inventory/${segment}
+                - RewritePath=/api/v1/admin/inventory(?<segment>.*), /admin/inventory${segment}
                 - name: RequestRateLimiter
                   args:
                     redis-rate-limiter.replenishRate: 10
@@ -321,11 +321,7 @@ auth:
 # 허용 Origin — 환경별로 오버라이드 가능
 # 운영 배포 시: SPRING_APP_ALLOWED-ORIGINS=https://dseum.co.kr
 app:
-  allowed-origins:
-    - https://localhost:5173
-    - https://localhost:5174
-    - http://localhost
-    - https://eum.gateway.com
+  allowed-origins: "https://localhost:5173,https://localhost:5174,http://localhost,https://eum.gateway.com"
   cookie:
     secure: true  # HTTPS 배포 시 true로 변경
     same-site: Lax # Strict

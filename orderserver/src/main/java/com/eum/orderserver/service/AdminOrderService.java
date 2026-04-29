@@ -4,6 +4,7 @@ import com.eum.orderserver.domain.OrderState;
 import com.eum.orderserver.domain.Orders;
 import com.eum.orderserver.dto.admin.AdminInconsistencyResponse;
 import com.eum.orderserver.dto.admin.AdminOrderResponse;
+import com.eum.orderserver.dto.admin.AdminOrderStatsResponse;
 import com.eum.orderserver.dto.admin.AdminOutboxPendingResponse;
 import com.eum.orderserver.dto.product.CheckoutValidationResponse;
 import com.eum.orderserver.outbox.OrderOutboxService;
@@ -19,8 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +49,25 @@ public class AdminOrderService {
     private final OrderRepository orderRepository;
     private final OrderDetailsRepository orderDetailsRepository;
     private final OrderOutboxService outboxService;
+
+    // ── 대시보드 통계 ──────────────────────────────────
+    public AdminOrderStatsResponse getStats() {
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        long todayOrders = orderRepository.countByTimeGreaterThanEqual(todayStart);
+        long totalOrders = orderRepository.count();
+        long failedOrders = orderRepository.countByOrderStateIn(FAILED_STATES);
+
+        Map<String, Long> breakdown = new LinkedHashMap<>();
+        orderRepository.countGroupByOrderState().forEach(row ->
+                breakdown.put(((OrderState) row[0]).getState(), (Long) row[1]));
+
+        return AdminOrderStatsResponse.builder()
+                .todayOrders(todayOrders)
+                .totalOrders(totalOrders)
+                .failedOrders(failedOrders)
+                .orderStatusBreakdown(breakdown)
+                .build();
+    }
 
     // ── 전체 주문 목록 (관리자) ──────────────────────────
     public Page<AdminOrderResponse> listAllOrders(int page, int size, OrderState status) {

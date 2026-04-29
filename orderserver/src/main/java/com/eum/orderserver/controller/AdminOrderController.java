@@ -3,6 +3,7 @@ package com.eum.orderserver.controller;
 import com.eum.orderserver.domain.OrderState;
 import com.eum.orderserver.dto.admin.AdminInconsistencyResponse;
 import com.eum.orderserver.dto.admin.AdminOrderResponse;
+import com.eum.orderserver.dto.admin.AdminOrderStatsResponse;
 import com.eum.orderserver.dto.admin.AdminOutboxPendingResponse;
 import com.eum.orderserver.service.AdminOrderService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,13 @@ import java.util.List;
 public class AdminOrderController {
 
     private final AdminOrderService adminOrderService;
+
+    // ── 대시보드 통계 ──────────────────────────────────
+    // GET /admin/orders/stats
+    @GetMapping("/admin/orders/stats")
+    public ResponseEntity<AdminOrderStatsResponse> getStats() {
+        return ResponseEntity.ok(adminOrderService.getStats());
+    }
 
     // ── 전체 주문 목록 ─────────────────────────────────
     // GET /admin/orders?page=0&size=20&status=PAYMENT_FAILED

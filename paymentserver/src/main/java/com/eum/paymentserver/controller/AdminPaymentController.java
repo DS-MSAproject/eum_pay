@@ -3,6 +3,7 @@ package com.eum.paymentserver.controller;
 import com.eum.paymentserver.domain.PaymentState;
 import com.eum.paymentserver.dto.admin.AdminIdempotencyViolationResponse;
 import com.eum.paymentserver.dto.admin.AdminPaymentResponse;
+import com.eum.paymentserver.dto.admin.AdminPaymentStatsResponse;
 import com.eum.paymentserver.dto.admin.AdminReconciliationResponse;
 import com.eum.paymentserver.service.AdminPaymentService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,13 @@ import java.util.List;
 public class AdminPaymentController {
 
     private final AdminPaymentService adminPaymentService;
+
+    // ── 대시보드 통계 ──────────────────────────────────
+    // GET /admin/payments/stats
+    @GetMapping("/admin/payments/stats")
+    public ResponseEntity<AdminPaymentStatsResponse> getStats() {
+        return ResponseEntity.ok(adminPaymentService.getStats());
+    }
 
     // ── 결제 목록 ──────────────────────────────────────
     // GET /admin/payments?page=0&size=20&status=FAILED
