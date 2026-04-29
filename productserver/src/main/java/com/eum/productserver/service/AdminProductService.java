@@ -73,7 +73,7 @@ public class AdminProductService {
         String mainImageUrl = null;
         if (req.getImages() != null) {
             mainImageUrl = req.getImages().stream()
-                    .filter(AdminProductCreateRequest.ImageDto::isMain)
+                    .filter(img -> Boolean.TRUE.equals(img.getIsMain()))
                     .findFirst()
                     .map(AdminProductCreateRequest.ImageDto::getImageUrl)
                     .orElse(req.getImages().isEmpty() ? null : req.getImages().get(0).getImageUrl());
@@ -112,7 +112,7 @@ public class AdminProductService {
                 ProductImage img = ProductImage.builder()
                         .imageUrl(imgDto.getImageUrl())
                         .imageKey(imgDto.getImageKey())
-                        .isMain(imgDto.isMain())
+                        .isMain(Boolean.TRUE.equals(imgDto.getIsMain()))
                         .build();
                 product.addImage(img);
             }
@@ -153,7 +153,7 @@ public class AdminProductService {
         String mainImageUrl = null;
         if (req.getImages() != null) {
             mainImageUrl = req.getImages().stream()
-                    .filter(AdminProductCreateRequest.ImageDto::isMain)
+                    .filter(img -> Boolean.TRUE.equals(img.getIsMain()))
                     .findFirst()
                     .map(AdminProductCreateRequest.ImageDto::getImageUrl)
                     .orElse(req.getImages().isEmpty() ? null : req.getImages().get(0).getImageUrl());
@@ -191,7 +191,7 @@ public class AdminProductService {
                 ProductImage img = ProductImage.builder()
                         .imageUrl(imgDto.getImageUrl())
                         .imageKey(imgDto.getImageKey())
-                        .isMain(imgDto.isMain())
+                        .isMain(Boolean.TRUE.equals(imgDto.getIsMain()))
                         .build();
                 product.addImage(img);
             }

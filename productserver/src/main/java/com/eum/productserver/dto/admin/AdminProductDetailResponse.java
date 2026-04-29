@@ -53,7 +53,7 @@ public class AdminProductDetailResponse {
         private Long imageId;
         private String imageUrl;
         private String imageKey;
-        private boolean isMain;
+        private Boolean isMain;
     }
 
     @Getter

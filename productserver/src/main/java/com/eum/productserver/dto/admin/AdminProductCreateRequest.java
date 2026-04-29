@@ -58,7 +58,7 @@ public class AdminProductCreateRequest {
     public static class ImageDto {
         private String imageUrl;
         private String imageKey;
-        private boolean isMain;
+        private Boolean isMain;
     }
 
     @Getter
