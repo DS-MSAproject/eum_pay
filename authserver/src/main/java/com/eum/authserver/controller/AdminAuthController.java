@@ -58,6 +58,27 @@ public class AdminAuthController {
         return ResponseEntity.ok(Map.of("accessToken", tokens.getAccessToken()));
     }
 
+    // ── 관리자 토큰 갱신 ──────────────────────────────
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(
+            @CookieValue(name = REFRESH_COOKIE, required = false) String refreshToken,
+            HttpServletResponse response) {
+
+        if (refreshToken == null)
+            return ResponseEntity.status(401).build();
+
+        try {
+            TokenPair tokens = authService.adminRefreshByToken(refreshToken);
+            addAccessCookie(response, tokens.getAccessToken());
+            addRefreshCookie(response, tokens.getRefreshToken());
+            return ResponseEntity.ok(Map.of("accessToken", tokens.getAccessToken()));
+        } catch (IllegalArgumentException e) {
+            expireAccessCookie(response);
+            expireRefreshCookie(response);
+            return ResponseEntity.status(401).build();
+        }
+    }
+
     // ── 관리자 로그아웃 ───────────────────────────────
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(

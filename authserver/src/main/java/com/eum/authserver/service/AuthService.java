@@ -180,6 +180,33 @@ public class AuthService {
         return issue(user);
     }
 
+    // ── 관리자 Refresh Token 갱신 (DB 조회 없음) ─────
+    @Transactional
+    public TokenPair adminRefreshByToken(String refreshToken) {
+        Long userId = refreshTokenRepo.findUserIdByToken(refreshToken)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 Refresh Token입니다."));
+
+        if (!Long.valueOf(0L).equals(userId)) {
+            throw new IllegalArgumentException("관리자 토큰이 아닙니다.");
+        }
+
+        if (refreshTokenRepo.isStolenToken(userId, refreshToken)) {
+            refreshTokenRepo.delete(userId);
+            log.warn("[보안경고] Admin Refresh Token 탈취 의심 — 모든 세션 강제 종료");
+            throw new IllegalArgumentException("비정상적인 토큰 사용이 감지되었습니다. 다시 로그인해주세요.");
+        }
+
+        String stored = refreshTokenRepo.find(userId);
+        if (stored == null || !stored.equals(refreshToken)) {
+            throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다.");
+        }
+
+        String newAccessToken  = jwtProvider.createAccessToken(0L, adminEmail, Role.ADMIN.getKey(), adminName);
+        String newRefreshToken = jwtProvider.createRefreshToken();
+        refreshTokenRepo.save(0L, newRefreshToken);
+        return new TokenPair(newAccessToken, newRefreshToken);
+    }
+
     // ── Refresh Token으로 갱신 (탈취 감지 포함) ─────
     @Transactional
     public TokenPair refreshByToken(String refreshToken) {

@@ -43,21 +43,46 @@ public class AdminMonitoringService {
         this.elasticsearchWebClient = elasticsearchWebClient;
     }
 
-    // ── 서비스 헬스 체크 ────────────────────────────────
+    // ── 서비스 헬스 체크 (병렬) ────────────────────────
     public List<ServiceHealthResponse> getServicesHealth() {
-        return EUREKA_SERVICES.stream().map(svc -> {
+        WebClient client = webClientBuilder.build();
+        return EUREKA_SERVICES.parallelStream().map(svc -> {
+            String base = "lb://" + svc;
             try {
+                long start = System.currentTimeMillis();
+
                 @SuppressWarnings("unchecked")
-                Map<String, Object> health = webClientBuilder.build().get()
-                        .uri("lb://" + svc + "/actuator/health")
+                Map<String, Object> health = client.get()
+                        .uri(base + "/actuator/health")
                         .retrieve()
                         .bodyToMono(Map.class)
                         .timeout(Duration.ofSeconds(3))
                         .block();
+
+                long responseTimeMs = System.currentTimeMillis() - start;
                 String status = health != null ? (String) health.get("status") : "UNKNOWN";
+
+                // Prometheus 텍스트에서 메트릭 파싱
+                String prom = fetchPrometheusText(client, base);
+
+                Double cpu     = parseMetricFirst(prom, "system_cpu_usage", null);
+                Double memUsed = parseMetricPositiveSum(prom, "jvm_memory_used_bytes", "area=\"heap\"");
+                Double memMax  = parseMetricPositiveSum(prom, "jvm_memory_max_bytes", "area=\"heap\"");
+
+                Double cpuPct = cpu != null ? Math.round(cpu * 1000.0) / 10.0 : null;
+                Long usedMb   = memUsed != null ? (long) (memUsed / 1024 / 1024) : null;
+                Long maxMb    = (memMax != null && memMax > 0) ? (long) (memMax / 1024 / 1024) : null;
+                Double memPct = (usedMb != null && maxMb != null && maxMb > 0)
+                        ? Math.round((double) usedMb / maxMb * 1000.0) / 10.0 : null;
+
                 return ServiceHealthResponse.builder()
                         .serviceName(svc.toLowerCase())
                         .status(status != null ? status : "UNKNOWN")
+                        .cpuUsage(cpuPct)
+                        .memoryUsagePercent(memPct)
+                        .memoryUsedMb(usedMb)
+                        .memoryMaxMb(maxMb)
+                        .responseTimeMs(responseTimeMs)
                         .checkedAt(LocalDateTime.now())
                         .build();
             } catch (Exception e) {
@@ -69,6 +94,57 @@ public class AdminMonitoringService {
                         .build();
             }
         }).toList();
+    }
+
+    private String fetchPrometheusText(WebClient client, String base) {
+        try {
+            return client.get()
+                    .uri(base + "/actuator/prometheus")
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(3))
+                    .block();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // Prometheus 텍스트에서 첫 번째 매칭 값 반환
+    private Double parseMetricFirst(String text, String metricName, String requiredLabel) {
+        if (text == null) return null;
+        for (String line : text.split("\n")) {
+            if (line.startsWith("#") || line.isBlank()) continue;
+            Double val = parseLine(line, metricName, requiredLabel);
+            if (val != null) return val;
+        }
+        return null;
+    }
+
+    // Prometheus 텍스트에서 양수 값들의 합 반환 (메모리: -1 제외)
+    private Double parseMetricPositiveSum(String text, String metricName, String requiredLabel) {
+        if (text == null) return null;
+        double sum = 0;
+        boolean found = false;
+        for (String line : text.split("\n")) {
+            if (line.startsWith("#") || line.isBlank()) continue;
+            Double val = parseLine(line, metricName, requiredLabel);
+            if (val != null && val > 0) { sum += val; found = true; }
+        }
+        return found ? sum : null;
+    }
+
+    private Double parseLine(String line, String metricName, String requiredLabel) {
+        String name = line.contains("{") ? line.substring(0, line.indexOf('{')) : line.split("\\s+")[0];
+        if (!name.equals(metricName)) return null;
+        if (requiredLabel != null && !line.contains(requiredLabel)) return null;
+        try {
+            String valueStr = line.contains("}")
+                    ? line.substring(line.lastIndexOf('}') + 1).trim().split("\\s+")[0]
+                    : line.split("\\s+")[1];
+            return Double.parseDouble(valueStr);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     // ── Kafka 컨슈머 그룹 오프셋 랙 ───────────────────

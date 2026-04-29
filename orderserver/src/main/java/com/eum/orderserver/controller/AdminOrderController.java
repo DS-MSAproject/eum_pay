@@ -5,6 +5,7 @@ import com.eum.orderserver.dto.admin.AdminInconsistencyResponse;
 import com.eum.orderserver.dto.admin.AdminOrderResponse;
 import com.eum.orderserver.dto.admin.AdminOrderStatsResponse;
 import com.eum.orderserver.dto.admin.AdminOutboxPendingResponse;
+import com.eum.orderserver.dto.admin.ProductSalesResponse;
 import com.eum.orderserver.service.AdminOrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,14 @@ public class AdminOrderController {
     @GetMapping("/admin/orders/stats")
     public ResponseEntity<AdminOrderStatsResponse> getStats() {
         return ResponseEntity.ok(adminOrderService.getStats());
+    }
+
+    // ── 제품별 판매량 집계 ─────────────────────────────
+    // GET /admin/orders/product-sales?limit=15
+    @GetMapping("/admin/orders/product-sales")
+    public ResponseEntity<List<ProductSalesResponse>> getProductSales(
+            @RequestParam(defaultValue = "15") int limit) {
+        return ResponseEntity.ok(adminOrderService.getProductSales(limit));
     }
 
     // ── 전체 주문 목록 ─────────────────────────────────

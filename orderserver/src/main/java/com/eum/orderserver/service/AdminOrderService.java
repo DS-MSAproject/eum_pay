@@ -6,6 +6,7 @@ import com.eum.orderserver.dto.admin.AdminInconsistencyResponse;
 import com.eum.orderserver.dto.admin.AdminOrderResponse;
 import com.eum.orderserver.dto.admin.AdminOrderStatsResponse;
 import com.eum.orderserver.dto.admin.AdminOutboxPendingResponse;
+import com.eum.orderserver.dto.admin.ProductSalesResponse;
 import com.eum.orderserver.dto.product.CheckoutValidationResponse;
 import com.eum.orderserver.outbox.OrderOutboxService;
 import com.eum.orderserver.repository.OrderDetailsRepository;
@@ -67,6 +68,19 @@ public class AdminOrderService {
                 .failedOrders(failedOrders)
                 .orderStatusBreakdown(breakdown)
                 .build();
+    }
+
+    // ── 제품별 판매량 집계 ─────────────────────────────────
+    public List<ProductSalesResponse> getProductSales(int limit) {
+        return orderDetailsRepository.findTopProductSales(Math.min(limit, 50))
+                .stream()
+                .map(row -> ProductSalesResponse.builder()
+                        .productId(((Number) row[0]).longValue())
+                        .productName((String) row[1])
+                        .totalQuantity(((Number) row[2]).longValue())
+                        .totalRevenue(((Number) row[3]).longValue())
+                        .build())
+                .toList();
     }
 
     // ── 전체 주문 목록 (관리자) ──────────────────────────

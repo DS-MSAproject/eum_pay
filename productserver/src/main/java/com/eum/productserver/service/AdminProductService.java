@@ -92,7 +92,7 @@ public class AdminProductService {
                 .allergens(req.getAllergens())
                 .ingredients(req.getIngredients())
                 .category(category)
-                .lifecycleStatus(ProductLifecycleStatus.DRAFT)
+                .lifecycleStatus(ProductLifecycleStatus.ON_SALE)
                 .build();
 
         // 옵션 처리
@@ -230,7 +230,7 @@ public class AdminProductService {
     @Transactional
     public AdminProductDetailResponse transitionStatus(Long productId, AdminProductStatusRequest req) {
         Product product = findProductById(productId);
-        product.transitionTo(req.getTargetStatus());
+        product.adminSetStatus(req.getTargetStatus());
         log.info("[Admin] 상품 상태 전이: productId={}, targetStatus={}, reason={}",
                 productId, req.getTargetStatus(), req.getReason());
         return AdminProductDetailResponse.from(product);

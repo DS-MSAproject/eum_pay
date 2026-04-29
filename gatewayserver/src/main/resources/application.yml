@@ -191,9 +191,10 @@ spring:
             - id: admin-auth-service
               uri: lb://AUTHSERVER
               predicates:
-                - Path=/api/v1/admin/auth/**
+                - Path=/api/v1/admin/auth/**, /api/v1/admin/users, /api/v1/admin/users/**
               filters:
                 - RewritePath=/api/v1/admin/auth/?(?<segment>.*), /admin/auth/${segment}
+                - RewritePath=/api/v1/admin/users(?<segment>.*), /admin/users${segment}
                 - name: RequestRateLimiter
                   args:
                     redis-rate-limiter.replenishRate: 5
@@ -321,7 +322,7 @@ auth:
 # 허용 Origin — 환경별로 오버라이드 가능
 # 운영 배포 시: SPRING_APP_ALLOWED-ORIGINS=https://dseum.co.kr
 app:
-  allowed-origins: "https://localhost:5173,https://localhost:5174,http://localhost,https://eum.gateway.com"
+  allowed-origins: "https://localhost:*,http://localhost,https://eum.gateway.com"
   cookie:
     secure: true  # HTTPS 배포 시 true로 변경
     same-site: Lax # Strict

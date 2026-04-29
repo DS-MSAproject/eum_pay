@@ -54,7 +54,8 @@ public class Product extends BaseTimeEntity {
     private Long price;
 
     @Enumerated(EnumType.STRING)
-    private ProductStatus status; // 판매중, 일시품절, 판매중지 등
+    @Builder.Default
+    private ProductStatus status = ProductStatus.판매중;
 
     @Builder.Default
     private Long salesCount = 0L; //판매수량
@@ -90,7 +91,7 @@ public class Product extends BaseTimeEntity {
     // --- 라이프사이클 상태 ---
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private ProductLifecycleStatus lifecycleStatus = ProductLifecycleStatus.DRAFT;
+    private ProductLifecycleStatus lifecycleStatus = ProductLifecycleStatus.ON_SALE;
 
     // --- 식품 성분/알러지 정보 ---
     @Column(length = 500)
@@ -114,9 +115,17 @@ public class Product extends BaseTimeEntity {
             throw new IllegalStateException("상태 전이 불가: " + this.lifecycleStatus + " → " + next);
         }
         this.lifecycleStatus = next;
-        // 기존 status 필드와 동기화
+        syncStatus(next);
+    }
+
+    public void adminSetStatus(ProductLifecycleStatus next) {
+        this.lifecycleStatus = next;
+        syncStatus(next);
+    }
+
+    private void syncStatus(ProductLifecycleStatus next) {
         if (next == ProductLifecycleStatus.ON_SALE) this.status = ProductStatus.판매중;
-        if (next == ProductLifecycleStatus.DISCONTINUED) this.status = ProductStatus.판매중지;
+        else this.status = ProductStatus.판매중지;
     }
 
     // 추가해야 할 메서드

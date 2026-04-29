@@ -10,6 +10,11 @@ import java.time.LocalDateTime;
 public class ServiceHealthResponse {
 
     private String serviceName;
-    private String status;      // UP / DOWN / UNKNOWN
+    private String status;           // UP / DOWN / UNKNOWN
+    private Double cpuUsage;         // 0~100 %
+    private Double memoryUsagePercent; // 0~100 %
+    private Long memoryUsedMb;
+    private Long memoryMaxMb;
+    private Long responseTimeMs;
     private LocalDateTime checkedAt;
 }

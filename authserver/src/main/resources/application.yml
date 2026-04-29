@@ -118,7 +118,12 @@ vault:
   token: ${VAULT_TOKEN:}
   path: ${VAULT_PATH:secret/auth/rsa}
 
-
+admin:
+  account:
+    email: ${ADMIN_EMAIL:admin@eum.com}
+    password: ${ADMIN_PASSWORD:Admin1234!}
+    username: ${ADMIN_USERNAME:admin}
+    name: ${ADMIN_NAME:관리자}
   elasticsearch:
     url: ${ELASTICSEARCH_URL:http://elasticsearch:9200}
 

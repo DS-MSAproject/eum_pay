@@ -74,6 +74,9 @@ management:
       show-details: always
     prometheus:
       access: read_only
+  health:
+    elasticsearch:
+      enabled: false
 
   metrics:
     tags:
