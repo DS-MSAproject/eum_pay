@@ -19,6 +19,7 @@ public class AdminProductDetailResponse {
     private Long price;
     private String status;
     private ProductLifecycleStatus lifecycleStatus;
+    private Long categoryId;
     private String categoryName;
     private int optionCount;
     private LocalDateTime createdAt;
@@ -35,6 +36,8 @@ public class AdminProductDetailResponse {
     private String deliveryMethod;
     private String productUrl;
     private List<OptionItem> options;
+    private List<ImageItem> images;
+    private List<DetailImageItem> detailImages;
 
     @Getter
     @Builder
@@ -42,6 +45,24 @@ public class AdminProductDetailResponse {
         private Long optionId;
         private String optionName;
         private Long extraPrice;
+    }
+
+    @Getter
+    @Builder
+    public static class ImageItem {
+        private Long imageId;
+        private String imageUrl;
+        private String imageKey;
+        private boolean isMain;
+    }
+
+    @Getter
+    @Builder
+    public static class DetailImageItem {
+        private Long imageId;
+        private String imageUrl;
+        private String imageKey;
+        private Integer displayOrder;
     }
 
     public static AdminProductDetailResponse from(Product p) {
@@ -56,6 +77,30 @@ public class AdminProductDetailResponse {
                     .collect(Collectors.toList());
         }
 
+        List<ImageItem> imageItems = null;
+        if (p.getImages() != null) {
+            imageItems = p.getImages().stream()
+                    .map(img -> ImageItem.builder()
+                            .imageId(img.getId())
+                            .imageUrl(img.getImageUrl())
+                            .imageKey(img.getImageKey())
+                            .isMain(img.isMain())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        List<DetailImageItem> detailImageItems = null;
+        if (p.getDetailImages() != null) {
+            detailImageItems = p.getDetailImages().stream()
+                    .map(di -> DetailImageItem.builder()
+                            .imageId(di.getId())
+                            .imageUrl(di.getImageUrl())
+                            .imageKey(di.getImageKey())
+                            .displayOrder(di.getDisplayOrder())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
         return AdminProductDetailResponse.builder()
                 .productId(p.getProductId())
                 .productName(p.getProductName())
@@ -63,6 +108,7 @@ public class AdminProductDetailResponse {
                 .price(p.getPrice())
                 .status(p.getStatus() != null ? p.getStatus().name() : null)
                 .lifecycleStatus(p.getLifecycleStatus())
+                .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
                 .categoryName(p.getCategory() != null ? p.getCategory().getCategoryName() : null)
                 .optionCount(p.getOptions() != null ? p.getOptions().size() : 0)
                 .createdAt(p.getCreatedDate())
@@ -77,6 +123,8 @@ public class AdminProductDetailResponse {
                 .deliveryMethod(p.getDeliveryMethod())
                 .productUrl(p.getProductUrl())
                 .options(optionItems)
+                .images(imageItems)
+                .detailImages(detailImageItems)
                 .build();
     }
 }

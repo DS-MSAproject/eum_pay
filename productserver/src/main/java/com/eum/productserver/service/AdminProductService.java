@@ -6,6 +6,8 @@ import com.eum.productserver.dto.admin.AdminProductListResponse;
 import com.eum.productserver.dto.admin.AdminProductStatusRequest;
 import com.eum.productserver.entity.Category;
 import com.eum.productserver.entity.Product;
+import com.eum.productserver.entity.ProductDetailImage;
+import com.eum.productserver.entity.ProductImage;
 import com.eum.productserver.entity.ProductLifecycleStatus;
 import com.eum.productserver.entity.ProductOption;
 import com.eum.productserver.message.ProductCreatedEvent;
@@ -38,7 +40,7 @@ public class AdminProductService {
      * 관리자 상품 목록 조회 (lifecycleStatus 필터링 지원)
      */
     public Page<AdminProductListResponse> listProducts(int page, int size, ProductLifecycleStatus lifecycleStatus) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "productId"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
 
         Page<Product> productPage;
         if (lifecycleStatus != null) {
@@ -67,12 +69,22 @@ public class AdminProductService {
 
         validateDogFoodDomain(category, req.getAllergens());
 
+        // 대표 이미지 URL (legacy imageUrl 필드 — 검색/목록용)
+        String mainImageUrl = null;
+        if (req.getImages() != null) {
+            mainImageUrl = req.getImages().stream()
+                    .filter(AdminProductCreateRequest.ImageDto::isMain)
+                    .findFirst()
+                    .map(AdminProductCreateRequest.ImageDto::getImageUrl)
+                    .orElse(req.getImages().isEmpty() ? null : req.getImages().get(0).getImageUrl());
+        }
+
         Product product = Product.builder()
                 .productName(req.getProductName())
                 .content(req.getContent())
                 .price(req.getPrice())
                 .brandName(req.getBrandName())
-                .imageUrl(req.getImageUrl())
+                .imageUrl(mainImageUrl)
                 .tags(req.getTags())
                 .keywords(req.getKeywords())
                 .deliveryFee(req.getDeliveryFee() != null ? req.getDeliveryFee() : 0L)
@@ -94,6 +106,31 @@ public class AdminProductService {
             }
         }
 
+        // 상품 이미지 처리
+        if (req.getImages() != null) {
+            for (AdminProductCreateRequest.ImageDto imgDto : req.getImages()) {
+                ProductImage img = ProductImage.builder()
+                        .imageUrl(imgDto.getImageUrl())
+                        .imageKey(imgDto.getImageKey())
+                        .isMain(imgDto.isMain())
+                        .build();
+                product.addImage(img);
+            }
+        }
+
+        // 상세 이미지 처리
+        if (req.getDetailImages() != null) {
+            for (int i = 0; i < req.getDetailImages().size(); i++) {
+                AdminProductCreateRequest.DetailImageDto diDto = req.getDetailImages().get(i);
+                ProductDetailImage di = ProductDetailImage.builder()
+                        .imageUrl(diDto.getImageUrl())
+                        .imageKey(diDto.getImageKey())
+                        .displayOrder(diDto.getDisplayOrder() != null ? diDto.getDisplayOrder() : i + 1)
+                        .build();
+                product.addDetailImage(di);
+            }
+        }
+
         Product saved = productRepository.save(product);
 
         // 재고 초기화 이벤트 발행
@@ -112,11 +149,21 @@ public class AdminProductService {
         Category category = categoryRepository.findById(req.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다. id=" + req.getCategoryId()));
 
+        // 대표 이미지 URL (legacy imageUrl 필드)
+        String mainImageUrl = null;
+        if (req.getImages() != null) {
+            mainImageUrl = req.getImages().stream()
+                    .filter(AdminProductCreateRequest.ImageDto::isMain)
+                    .findFirst()
+                    .map(AdminProductCreateRequest.ImageDto::getImageUrl)
+                    .orElse(req.getImages().isEmpty() ? null : req.getImages().get(0).getImageUrl());
+        }
+
         product.setProductName(req.getProductName());
         product.setContent(req.getContent());
         product.setPrice(req.getPrice());
         product.setBrandName(req.getBrandName());
-        product.setImageUrl(req.getImageUrl());
+        product.setImageUrl(mainImageUrl);
         product.setTags(req.getTags());
         product.setKeywords(req.getKeywords());
         product.setDeliveryFee(req.getDeliveryFee() != null ? req.getDeliveryFee() : 0L);
@@ -134,6 +181,33 @@ public class AdminProductService {
                         .extraPrice(optDto.getExtraPrice() != null ? optDto.getExtraPrice() : 0L)
                         .build();
                 product.addOption(option);
+            }
+        }
+
+        // 이미지 교체
+        product.getImages().clear();
+        if (req.getImages() != null) {
+            for (AdminProductCreateRequest.ImageDto imgDto : req.getImages()) {
+                ProductImage img = ProductImage.builder()
+                        .imageUrl(imgDto.getImageUrl())
+                        .imageKey(imgDto.getImageKey())
+                        .isMain(imgDto.isMain())
+                        .build();
+                product.addImage(img);
+            }
+        }
+
+        // 상세 이미지 교체
+        product.getDetailImages().clear();
+        if (req.getDetailImages() != null) {
+            for (int i = 0; i < req.getDetailImages().size(); i++) {
+                AdminProductCreateRequest.DetailImageDto diDto = req.getDetailImages().get(i);
+                ProductDetailImage di = ProductDetailImage.builder()
+                        .imageUrl(diDto.getImageUrl())
+                        .imageKey(diDto.getImageKey())
+                        .displayOrder(diDto.getDisplayOrder() != null ? diDto.getDisplayOrder() : i + 1)
+                        .build();
+                product.addDetailImage(di);
             }
         }
 
@@ -167,8 +241,8 @@ public class AdminProductService {
     // ----------------------------------------
 
     private Product findProductById(Long productId) {
-        return productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다. id=" + productId));
+        return productRepository.findByProductId(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다. productId=" + productId));
     }
 
     private void publishProductCreatedEvent(Product product, int initialStock) {

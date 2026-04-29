@@ -204,7 +204,7 @@ spring:
             - id: admin-product-service
               uri: lb://DSEUM-PRODUCT
               predicates:
-                - Path=/api/v1/admin/products/**
+                - Path=/api/v1/admin/products, /api/v1/admin/products/**
               filters:
                 - RewritePath=/api/v1/admin/products(?<segment>.*), /admin/products${segment}
                 - name: RequestRateLimiter

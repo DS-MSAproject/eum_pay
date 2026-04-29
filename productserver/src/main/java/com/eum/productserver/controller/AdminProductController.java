@@ -34,6 +34,7 @@ public class AdminProductController {
 
     private final AdminProductService adminProductService;
     private final AdminBulkUploadService adminBulkUploadService;
+    private final com.eum.productserver.service.ProductImageUploadService productImageUploadService;
 
     /**
      * GET /admin/products?page=0&size=20&lifecycleStatus=DRAFT
@@ -105,6 +106,24 @@ public class AdminProductController {
 
         AdminProductDetailResponse response = adminProductService.transitionStatus(productId, request);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /admin/products/image-upload
+     * 상품 대표 이미지 S3 업로드 → URL 반환
+     */
+    @PostMapping("/image-upload")
+    public ResponseEntity<java.util.Map<String, String>> uploadImage(
+            @RequestParam("file") MultipartFile file) {
+
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        com.eum.productserver.dto.request.item.save.ImageFileSaveDto dto =
+                productImageUploadService.upload(file);
+        return ResponseEntity.ok(java.util.Map.of(
+                "imageUrl", dto.getImageUrl(),
+                "imageKey", dto.getImageKey()));
     }
 
     /**

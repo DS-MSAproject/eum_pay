@@ -28,7 +28,6 @@ public class AdminProductCreateRequest {
     private Long price;
 
     private String brandName;
-    private String imageUrl;
     private String tags;
     private String keywords;
     private Long deliveryFee;
@@ -41,10 +40,32 @@ public class AdminProductCreateRequest {
 
     private List<OptionDto> options;
 
+    /** 상품 이미지 (isMain=true 인 항목이 대표 이미지) */
+    private List<ImageDto> images;
+
+    /** 상세 설명 이미지 (displayOrder 순으로 표시) */
+    private List<DetailImageDto> detailImages;
+
     @Getter
     @Setter
     public static class OptionDto {
         private String optionName;
         private Long extraPrice;
+    }
+
+    @Getter
+    @Setter
+    public static class ImageDto {
+        private String imageUrl;
+        private String imageKey;
+        private boolean isMain;
+    }
+
+    @Getter
+    @Setter
+    public static class DetailImageDto {
+        private String imageUrl;
+        private String imageKey;
+        private Integer displayOrder;
     }
 }
