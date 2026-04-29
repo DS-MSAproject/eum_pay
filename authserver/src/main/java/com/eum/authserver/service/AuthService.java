@@ -15,6 +15,7 @@ import com.eum.authserver.repository.ProfileRepository;
 import com.eum.authserver.entity.Profile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,8 +37,17 @@ public class AuthService {
     private final LoginHistoryRepository  loginHistoryRepo;
     private final StringRedisTemplate     redisTemplate;
     private final ProfileRepository       profileRepository;
-    private final TermsService            termsService;  // ← 신규 주입
+    private final TermsService            termsService;
     private final EmailVerificationService emailVerificationService;
+
+    @Value("${admin.account.email}")
+    private String adminEmail;
+
+    @Value("${admin.account.password}")
+    private String adminPassword;
+
+    @Value("${admin.account.name}")
+    private String adminName;
 
     // ── 회원가입 ──────────────────────────────────────
     @Transactional
@@ -138,23 +148,17 @@ public class AuthService {
         return issue(user);
     }
 
-    // ── 관리자 이메일 로그인 ───────────────────────────
-    @Transactional
+    // ── 관리자 이메일 로그인 (yml 자격증명으로 검증, DB 미사용) ─
     public TokenPair adminLogin(String email, String password,
                                 String clientIp, String userAgent) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다."));
-
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (!adminEmail.equals(email) || !adminPassword.equals(password)) {
             throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
-        if (user.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("관리자 계정이 아닙니다.");
-        }
-
-        saveLoginHistory(user, clientIp, userAgent, user.getProvider());
-        return issue(user);
+        String accessToken = jwtProvider.createAccessToken(0L, adminEmail, Role.ADMIN.getKey(), adminName);
+        String refreshToken = jwtProvider.createRefreshToken();
+        refreshTokenRepo.save(0L, refreshToken);
+        return new TokenPair(accessToken, refreshToken);
     }
 
     // ── 토큰 발급 (로그인 + OAuth2 공통) ─────────────

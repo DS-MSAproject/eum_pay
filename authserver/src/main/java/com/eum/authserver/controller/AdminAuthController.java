@@ -4,8 +4,6 @@ import com.eum.authserver.dto.AdminLoginRequest;
 import com.eum.authserver.dto.AdminMeResponse;
 import com.eum.authserver.dto.TokenPair;
 import com.eum.authserver.entity.Role;
-import com.eum.authserver.entity.User;
-import com.eum.authserver.repository.UserRepository;
 import com.eum.authserver.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,7 +24,6 @@ import java.util.Map;
 public class AdminAuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
 
     private static final String ACCESS_COOKIE  = "accessToken";
     private static final String REFRESH_COOKIE = "refreshToken";
@@ -36,6 +33,12 @@ public class AdminAuthController {
 
     @Value("${app.cookie.same-site:Lax}")
     private String cookieSameSite;
+
+    @Value("${admin.account.email}")
+    private String adminEmail;
+
+    @Value("${admin.account.name}")
+    private String adminName;
 
     // ── 관리자 로그인 ─────────────────────────────────
     @PostMapping("/login")
@@ -83,13 +86,7 @@ public class AdminAuthController {
             return ResponseEntity.status(403).build();
         }
 
-        User user = userRepository.findByEmail(email)
-                .orElse(null);
-        if (user == null || user.getRole() != Role.ADMIN) {
-            return ResponseEntity.status(403).build();
-        }
-
-        return ResponseEntity.ok(AdminMeResponse.from(user));
+        return ResponseEntity.ok(new AdminMeResponse(0L, adminEmail, adminName, Role.ADMIN.getKey()));
     }
 
     // ── 헬퍼 ──────────────────────────────────────────

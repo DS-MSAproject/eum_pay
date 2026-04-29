@@ -118,7 +118,7 @@ vault:
   token: ${VAULT_TOKEN:}
   path: ${VAULT_PATH:secret/auth/rsa}
 
-admin:
+
   elasticsearch:
     url: ${ELASTICSEARCH_URL:http://elasticsearch:9200}
 

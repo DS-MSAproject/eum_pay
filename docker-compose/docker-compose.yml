@@ -918,6 +918,8 @@ services:
         condition: service_started
       vault:
         condition: service_started
+      dseumproducts:
+        condition: service_started
     networks:
       backend:
         aliases:

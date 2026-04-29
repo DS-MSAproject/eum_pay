@@ -16,11 +16,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileCopyUtils;
@@ -50,7 +50,6 @@ public class ProductDataInitializer implements ApplicationRunner {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ObjectMapper objectMapper;
-    private final JdbcTemplate jdbcTemplate;
     private final PathMatchingResourcePatternResolver resourceResolver = new PathMatchingResourcePatternResolver();
 
     @Override
@@ -105,9 +104,6 @@ public class ProductDataInitializer implements ApplicationRunner {
                     continue;
                 }
 
-                if (seedProduct.productId() != null) {
-                    alignProductIdSequence(seedProduct.productId());
-                }
                 ResProductSaveDto saved = productService.save(request, imageFiles, detailFiles);
                 savedCount++;
                 log.debug("상품 seed 등록: productName={}, productId={}", saved.getProductName(), saved.getProductId());
@@ -117,7 +113,6 @@ public class ProductDataInitializer implements ApplicationRunner {
         }
 
         if (savedCount > 0) {
-            advanceProductIdSequence();
             log.info("초기 상품 seed 등록 완료. savedCount={}", savedCount);
         }
         if (backfilledCount > 0) {
@@ -306,8 +301,7 @@ public class ProductDataInitializer implements ApplicationRunner {
                 seedProduct.tags(),
                 seedProduct.price(),
                 optionNames,
-                options,
-                seedProduct.productId()
+                options
         );
     }
 
@@ -439,24 +433,6 @@ public class ProductDataInitializer implements ApplicationRunner {
         return option;
     }
 
-    // product_id IDENTITY 시퀀스를 targetId로 맞춰 다음 INSERT가 정확히 해당 값을 받도록 한다.
-    private void alignProductIdSequence(Long targetId) {
-        jdbcTemplate.queryForObject(
-                "SELECT setval(pg_get_serial_sequence('products', 'product_id'), ?, false)",
-                Long.class,
-                targetId
-        );
-    }
-
-    // 모든 seed INSERT 후 시퀀스를 현재 최대 product_id로 동기화한다.
-    private void advanceProductIdSequence() {
-        jdbcTemplate.queryForObject(
-                "SELECT setval(pg_get_serial_sequence('products', 'product_id'),"
-                        + " (SELECT COALESCE(MAX(product_id), 1) FROM products), true)",
-                Long.class
-        );
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record SeedProduct(
             String categoryName,
@@ -469,8 +445,7 @@ public class ProductDataInitializer implements ApplicationRunner {
             String tags,
             Long price,
             List<String> optionNames,
-            List<SeedOption> options,
-            Long productId
+            List<SeedOption> options
     ) {
 
         String originalFilename() {
