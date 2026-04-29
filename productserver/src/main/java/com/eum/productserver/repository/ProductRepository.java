@@ -1,14 +1,16 @@
 package com.eum.productserver.repository;
 
 import com.eum.productserver.entity.Product;
+import com.eum.productserver.entity.ProductLifecycleStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom {
+public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom, JpaSpecificationExecutor<Product> {
 
     // 1. 특정 카테고리에 속한 상품 존재 여부
     boolean existsByCategoryId(Long categoryId); // 엔티티 필드명에 맞춰 수정 권장
@@ -26,4 +28,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
     List<Product> findByStatusNot(Product.ProductStatus status);
 
     List<Product> findByProductIdGreaterThanOrderByProductIdAsc(Long lastProductId, Pageable pageable);
+
+    Page<Product> findByLifecycleStatus(ProductLifecycleStatus lifecycleStatus, Pageable pageable);
 }

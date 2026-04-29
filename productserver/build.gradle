@@ -65,6 +65,15 @@ dependencies {
 
     // Vault
     implementation 'org.springframework.cloud:spring-cloud-starter-vault-config'
+
+    //== Spring Cloud Stream (Kafka) ==//
+    implementation 'org.springframework.cloud:spring-cloud-stream'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
+
+    //== Excel / CSV (Apache POI) ==//
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
 }
 
 dependencyManagement {

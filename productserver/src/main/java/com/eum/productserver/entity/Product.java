@@ -7,6 +7,8 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Builder
 @Getter
@@ -77,6 +79,38 @@ public class Product extends BaseTimeEntity {
     private Long deliveryFee = 0L;      // 배송비
     @Builder.Default
     private String deliveryMethod = "일반택배"; // 배송 방법
+
+    // --- 라이프사이클 상태 ---
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ProductLifecycleStatus lifecycleStatus = ProductLifecycleStatus.DRAFT;
+
+    // --- 식품 성분/알러지 정보 ---
+    @Column(length = 500)
+    private String allergens;   // e.g., "닭고기,연어,달걀"
+
+    @Column(columnDefinition = "TEXT")
+    private String ingredients; // 전체 성분 목록
+
+    // --- 상태 전이 규칙 ---
+    private static final Map<ProductLifecycleStatus, Set<ProductLifecycleStatus>> ALLOWED_TRANSITIONS = Map.of(
+            ProductLifecycleStatus.DRAFT,        Set.of(ProductLifecycleStatus.REVIEW),
+            ProductLifecycleStatus.REVIEW,       Set.of(ProductLifecycleStatus.READY, ProductLifecycleStatus.DRAFT),
+            ProductLifecycleStatus.READY,        Set.of(ProductLifecycleStatus.ON_SALE, ProductLifecycleStatus.DRAFT),
+            ProductLifecycleStatus.ON_SALE,      Set.of(ProductLifecycleStatus.DISCONTINUED),
+            ProductLifecycleStatus.DISCONTINUED, Set.of()
+    );
+
+    public void transitionTo(ProductLifecycleStatus next) {
+        Set<ProductLifecycleStatus> allowed = ALLOWED_TRANSITIONS.getOrDefault(this.lifecycleStatus, Set.of());
+        if (!allowed.contains(next)) {
+            throw new IllegalStateException("상태 전이 불가: " + this.lifecycleStatus + " → " + next);
+        }
+        this.lifecycleStatus = next;
+        // 기존 status 필드와 동기화
+        if (next == ProductLifecycleStatus.ON_SALE) this.status = ProductStatus.판매중;
+        if (next == ProductLifecycleStatus.DISCONTINUED) this.status = ProductStatus.판매중지;
+    }
 
     // 추가해야 할 메서드
     public void updateSalesRank(Integer rank) {

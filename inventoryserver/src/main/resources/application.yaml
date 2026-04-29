@@ -12,7 +12,7 @@ spring:
     compatibility-verifier:
       enabled: false
     function:
-      definition: orderCheckedOutConsumer;paymentCompletedConsumer;paymentFailedConsumer;paymentCancelStatusConsumer
+      definition: orderCheckedOutConsumer;paymentCompletedConsumer;paymentFailedConsumer;paymentCancelStatusConsumer;productCreatedConsumer
     stream:
       instance-count: ${STREAM_INSTANCE_COUNT:1}
       instance-index: ${STREAM_INSTANCE_INDEX:0}
@@ -39,6 +39,11 @@ spring:
           group: inventory-payment-cancel-status-group
           consumer:
             partitioned: true
+        productCreatedConsumer-in-0:
+          destination: ProductCreated
+          group: inventory-product-created-group
+          consumer:
+            partitioned: true
       kafka:
         binder:
           brokers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092,kafka2:9092,kafka3:9092}
@@ -59,6 +64,11 @@ spring:
               dlq-partitions: 1
               auto-commit-on-error: true
           paymentCancelStatusConsumer-in-0:
+            consumer:
+              enable-dlq: true
+              dlq-partitions: 1
+              auto-commit-on-error: true
+          productCreatedConsumer-in-0:
             consumer:
               enable-dlq: true
               dlq-partitions: 1

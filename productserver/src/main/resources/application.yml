@@ -27,6 +27,15 @@ spring:
     bootstrap:
       enabled: false
 
+    stream:
+      bindings:
+        product-created-out-0:
+          destination: ProductCreated
+          contentType: application/json
+      kafka:
+        binder:
+          brokers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092,kafka2:9092,kafka3:9092}
+
     # 2. 호환성 검사기 설정
     compatibility-verifier:
       enabled: false

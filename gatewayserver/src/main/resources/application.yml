@@ -201,6 +201,19 @@ spring:
                     redis-rate-limiter.requestedTokens: 1
                     key-resolver: "#{@ipKeyResolver}"
 
+            - id: admin-product-service
+              uri: lb://DSEUM-PRODUCT
+              predicates:
+                - Path=/api/v1/admin/products/**
+              filters:
+                - RewritePath=/api/v1/admin/products(?<segment>.*), /admin/products${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
             - id: admin-order-service
               uri: lb://DSEUM-ORDER
               predicates:
