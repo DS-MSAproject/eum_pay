@@ -146,6 +146,7 @@ public class JwtAuthenticationFilter implements WebFilter {
     }
 
     private Mono<Void> authorizeRequest(ServerWebExchange exchange, WebFilterChain chain, Claims claims) {
+        String path   = exchange.getRequest().getPath().value();
         String jti    = jwtVerifier.getJti(claims);
         String userId = jwtVerifier.getUserId(claims);
         String email  = jwtVerifier.getEmail(claims);
@@ -153,6 +154,11 @@ public class JwtAuthenticationFilter implements WebFilter {
         String role   = jwtVerifier.getRole(claims);
         String displayName = (name != null && !name.isBlank()) ? name : email;
         String encodedDisplayName = URLEncoder.encode(displayName, StandardCharsets.UTF_8);
+
+        // /api/v1/admin/** 경로는 ROLE_ADMIN만 허용
+        if (path.startsWith("/api/v1/admin/") && !"ROLE_ADMIN".equals(role)) {
+            return forbiddenResponse(exchange, "관리자 권한이 필요합니다.");
+        }
 
         return redisTemplate.hasKey("blacklist:" + jti)
                 .flatMap(isBlacklisted -> {
@@ -178,6 +184,15 @@ public class JwtAuthenticationFilter implements WebFilter {
                         MDC.remove("userEmail");
                     });
                 });
+    }
+
+    private Mono<Void> forbiddenResponse(ServerWebExchange exchange, String message) {
+        var response = exchange.getResponse();
+        response.setStatusCode(HttpStatus.FORBIDDEN);
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        var body = ("{\"error\":\"" + message + "\"}").getBytes(StandardCharsets.UTF_8);
+        var buffer = response.bufferFactory().wrap(body);
+        return response.writeWith(Mono.just(buffer));
     }
 
     private Mono<RefreshResult> refreshAccessToken(ServerWebExchange exchange, String refreshToken) {

@@ -188,12 +188,67 @@ spring:
                     redis-rate-limiter.requestedTokens: 1
                     key-resolver: "#{@ipKeyResolver}"
 
+            - id: admin-auth-service
+              uri: lb://AUTHSERVER
+              predicates:
+                - Path=/api/v1/admin/auth/**
+              filters:
+                - RewritePath=/api/v1/admin/auth/?(?<segment>.*), /admin/auth/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: admin-order-service
+              uri: lb://DSEUM-ORDER
+              predicates:
+                - Path=/api/v1/admin/orders/**, /api/v1/admin/outbox/**
+              filters:
+                - RewritePath=/api/v1/admin/orders(?<segment>.*), /admin/orders${segment}
+                - RewritePath=/api/v1/admin/outbox(?<segment>.*), /admin/outbox${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: admin-payment-service
+              uri: lb://DSEUM-PAYMENT
+              predicates:
+                - Path=/api/v1/admin/payments/**
+              filters:
+                - RewritePath=/api/v1/admin/payments(?<segment>.*), /admin/payments${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
             - id: inventory-admin-service
               uri: lb://DSEUM-INVENTORY
               predicates:
                 - Path=/api/v1/admin/inventory/**
               filters:
                 - RewritePath=/api/v1/admin/inventory/?(?<segment>.*), /admin/inventory/${segment}
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: admin-monitoring-service
+              uri: lb://AUTHSERVER
+              predicates:
+                - Path=/api/v1/admin/monitoring/**, /api/v1/admin/audit-logs, /api/v1/admin/dashboard/**
+              filters:
+                - RewritePath=/api/v1/admin/monitoring(?<segment>.*), /admin/monitoring${segment}
+                - RewritePath=/api/v1/admin/audit-logs(?<segment>.*), /admin/audit-logs${segment}
+                - RewritePath=/api/v1/admin/dashboard(?<segment>.*), /admin/dashboard${segment}
                 - name: RequestRateLimiter
                   args:
                     redis-rate-limiter.replenishRate: 10
@@ -255,6 +310,7 @@ auth:
 app:
   allowed-origins:
     - https://localhost:5173
+    - https://localhost:5174
     - http://localhost
     - https://eum.gateway.com
   cookie:
@@ -267,6 +323,7 @@ orders:
     port: 9091
 whitelist:
   paths:
+    - /api/v1/admin/auth/login
     - /api/v1/auth/login
     - /api/v1/auth/signup
     - /api/v1/auth/refresh    #로그인 연장용 API accesstoken이 만료 가지고있는 refreshtoken으로  새 accesstoken 발급

@@ -138,6 +138,25 @@ public class AuthService {
         return issue(user);
     }
 
+    // ── 관리자 이메일 로그인 ───────────────────────────
+    @Transactional
+    public TokenPair adminLogin(String email, String password,
+                                String clientIp, String userAgent) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다."));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new IllegalArgumentException("관리자 계정이 아닙니다.");
+        }
+
+        saveLoginHistory(user, clientIp, userAgent, user.getProvider());
+        return issue(user);
+    }
+
     // ── 토큰 발급 (로그인 + OAuth2 공통) ─────────────
     @Transactional
     public TokenPair issue(User user) {
