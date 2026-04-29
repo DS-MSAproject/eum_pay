@@ -70,6 +70,11 @@
 - `sources[]`
   - `documentId`, `filename`, `chunkId`, `snippet`, `score`
 
+프론트 렌더링 규칙(중요):
+- 채팅 버블에는 `answer`만 출력합니다.
+- `sources`, `rewrittenQuestion`, `sessionId`는 UI 본문에 출력하지 않습니다.
+- 위 필드들은 디버깅/추적/로깅 용도로만 사용합니다.
+
 예시:
 
 ```json

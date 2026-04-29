@@ -68,7 +68,8 @@ public class SecurityConfig {
                             "/.well-known/**",
                             "/api/v1/csrf",
                             "/actuator/**",
-                            "/api/media/**"
+                            "/api/media/**",
+                            "/api/v1/rag/**"
                     )
             );
 

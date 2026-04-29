@@ -21,6 +21,7 @@
 - `GET /api/v1/search/navigation`
 - `GET /api/v1/reviews` (조회는 searchserver 담당)
 - `GET /api/v1/reviews/header` (조회는 searchserver 담당)
+- `GET /api/v1/search/reviews/best-photo`
 
 ## 2) 공통 응답 포맷
 
@@ -240,6 +241,47 @@
 }
 ```
 
+### 5.3 베스트 포토리뷰
+
+- Method: `GET`
+- URL: `/api/v1/search/reviews/best-photo`
+- Query Params
+  - 없음 (고정 TOP 5 반환)
+
+응답 data item(`BestPhotoReviewResponse`):
+- `reviewId`, `productId`, `productName`
+- `writerName`, `star`, `likeCount`
+- `reviewMediaUrls` (이미지 중심, 최대 5개 규격 준수)
+- `reviewDetailUrl`, `createdAt`
+
+프론트 렌더링 규칙:
+- 베스트 포토리뷰 썸네일은 `reviewMediaUrls[0]`만 사용합니다.
+- 즉, 여러 URL이 내려와도 대표 이미지는 첫 번째 요소 1장만 노출합니다.
+
+응답 예시:
+
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "reviewId": "018f90a3-b4de-7e3c-bf8f-a3f4f2191abc",
+      "productId": 5,
+      "productName": "스위피 소이밀크 펫두유 1BOX",
+      "writerName": "user-45",
+      "star": 5,
+      "likeCount": 12,
+      "reviewMediaUrls": [
+        "https://.../review/1.jpg",
+        "https://.../review/2.jpg"
+      ],
+      "reviewDetailUrl": "/reviews/018f90a3-b4de-7e3c-bf8f-a3f4f2191abc",
+      "createdAt": "2026-04-28T14:03:22"
+    }
+  ]
+}
+```
+
 ## 6) 카테고리/브랜드/네비게이션 API
 
 ### 6.1 카테고리
@@ -309,7 +351,17 @@
 - `GET /api/v1/search/products/autocomplete` (`Flux<AutocompleteResponse>`)
 - `GET /api/v1/search/products/trending` (`Flux<TrendingKeywordResponse>`)
 - `GET /api/v1/reviews/header` (`ReviewHeaderResponse`)
+- `GET /api/v1/search/reviews/best-photo` (`List<BestPhotoReviewResponse>`)
 - `GET /api/v1/search/categories` (`Mono<Map<String, Object>>`)
 - `GET /api/v1/search/brand-story` (`Mono<Map<String, Object>>`)
 - `GET /api/v1/search/brand-story/detail` (`Mono<Map<String, Object>>`)
 - `GET /api/v1/search/navigation` (`NavigationMenuResponse`)
+
+## 8) 호환성 특이사항 (기존 DTO 영향 없음)
+
+- 이번 변경은 **기존 필드 변경/삭제 없이 확장 필드만 추가**하는 방식입니다.
+- 상품 검색 응답(`ProductSearchResponse`)에 아래 필드가 추가되었습니다.
+  - `productInfo` (String, nullable): 추후 상품 텍스트 상세 정보용
+  - `content` (String, nullable): 현재 더미 상품 설명 참조용
+- 프론트엔드가 기존에 사용하던 필드(`id`, `imageUrl`, `productTitle`, `price` 등)는 그대로 유지됩니다.
+- JSON 특성상 프론트에서 사용하지 않는 신규 필드는 무시되므로, **기존 화면/로직에는 영향이 없습니다**.

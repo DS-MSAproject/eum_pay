@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class UserTermsAgreement {
 
+    // 약관 동의 이력 PK
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -56,6 +57,7 @@ public class UserTermsAgreement {
     )
     private static final class UniqueConstraintMarker {}
 
+    // 회원가입/약관 동의 처리 시 동의 이력 엔티티를 만드는 팩토리 메서드
     public static UserTermsAgreement of(Long userId, String termId, String termVersion,
                                         boolean agreed, String ipAddress, String userAgent) {
         UserTermsAgreement agreement = new UserTermsAgreement();
