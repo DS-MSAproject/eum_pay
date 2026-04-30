@@ -102,9 +102,10 @@ public class AdminMonitoringService {
                     .uri(base + "/actuator/prometheus")
                     .retrieve()
                     .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(3))
+                    .timeout(Duration.ofSeconds(5))
                     .block();
         } catch (Exception e) {
+            log.warn("[Admin] Prometheus fetch 실패 ({}): {} - {}", base, e.getClass().getSimpleName(), e.getMessage());
             return null;
         }
     }
